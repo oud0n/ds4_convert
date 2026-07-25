@@ -1,0 +1,6 @@
+{
+  "name": "BNX4 NMEA Converter",
+  "description": "デジスパイス4のbnx4、bon4をnmeaに変換するアプリ",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
