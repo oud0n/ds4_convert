@@ -10,14 +10,13 @@ import {
   MapPin, 
   CheckCircle, 
   HelpCircle, 
-  Sparkles,
   Info
 } from "lucide-react";
 import { motion } from "motion/react";
 import { UploadZone } from "./components/UploadZone";
 import { TrackPreview } from "./components/TrackPreview";
 import { ParsedGPSFile } from "./types";
-import { generateMockSuzukaLog, adjustParsedFile } from "./utils/parser";
+import { adjustParsedFile } from "./utils/parser";
 import { convertToGPX, convertToCSV, convertToNMEA, convertToTXT, convertToHTMLMap } from "./utils/converter";
 
 export default function App() {
@@ -25,21 +24,48 @@ export default function App() {
   const [exportFormat, setExportFormat] = useState<"nmea" | "gpx" | "csv" | "txt" | "html">("nmea");
   const [timezoneOffset, setTimezoneOffset] = useState<number>(9); // Default to JST (+9) to match official app output
   const [talkerId, setTalkerId] = useState<"GP" | "GN">("GP");
+  const [trimStartSec, setTrimStartSec] = useState<number>(0);
+  const [trimEndSec, setTrimEndSec] = useState<number>(0);
 
   const handleFileLoaded = (loadedFile: ParsedGPSFile) => {
     setFile(loadedFile);
+    setTrimStartSec(0);
+    setTrimEndSec(loadedFile.stats.durationSeconds);
   };
 
-  const loadDemoLog = () => {
-    const demo = generateMockSuzukaLog("demo_suzuka_hotlap.dg1");
-    setFile(demo);
-  };
+  // Calculate milliseconds for trimming
+  const { trimStartMs, trimEndMs } = React.useMemo(() => {
+    if (!file || !file.stats.startTime) return { trimStartMs: null, trimEndMs: null };
+    const origStartMs = file.stats.startTime.getTime();
+    const shiftedStartMs = origStartMs + timezoneOffset * 3600 * 1000;
+    
+    const trimStartMs = shiftedStartMs + trimStartSec * 1000;
+    const trimEndMs = shiftedStartMs + trimEndSec * 1000;
+    return { trimStartMs, trimEndMs };
+  }, [file, timezoneOffset, trimStartSec, trimEndSec]);
 
-  // Dynamically calculate the timezone-shifted & talker ID-adapted file
+  // Calculate full timezone-shifted file without trim filter for full graph reference
+  const fullAdjustedFile = React.useMemo(() => {
+    if (!file) return null;
+    return adjustParsedFile(file, timezoneOffset, talkerId, null, null);
+  }, [file, timezoneOffset, talkerId]);
+
+  // Dynamically calculate the timezone-shifted & talker ID-adapted file with trim applied
   const adjustedFile = React.useMemo(() => {
     if (!file) return null;
-    return adjustParsedFile(file, timezoneOffset, talkerId);
-  }, [file, timezoneOffset, talkerId]);
+    return adjustParsedFile(file, timezoneOffset, talkerId, trimStartMs, trimEndMs);
+  }, [file, timezoneOffset, talkerId, trimStartMs, trimEndMs]);
+
+  const handleTrimChange = (startSec: number, endSec: number) => {
+    setTrimStartSec(startSec);
+    setTrimEndSec(endSec);
+  };
+
+  const handleResetTrim = () => {
+    if (!file) return;
+    setTrimStartSec(0);
+    setTrimEndSec(file.stats.durationSeconds);
+  };
 
   const tzLabel = timezoneOffset === 9 ? "JST (UTC+9)" : timezoneOffset === 0 ? "UTC" : `UTC${timezoneOffset >= 0 ? "+" : ""}${timezoneOffset}`;
 
@@ -140,7 +166,7 @@ export default function App() {
           </p>
         </div>
 
-        {/* Upload Zone & Preloaded Demo */}
+        {/* Upload Zone */}
         <div className="grid grid-cols-1 gap-6">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
@@ -148,18 +174,9 @@ export default function App() {
             transition={{ duration: 0.4 }}
             className="bg-slate-900/20 border border-slate-900 rounded-2xl p-6 flex flex-col gap-5 shadow-xl shadow-slate-950/40"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-200">GPS ログファイルのアップロード</h2>
-                <p className="text-[11px] text-slate-500 mt-0.5">ファイルをドロップするか、デバイスから選択してください</p>
-              </div>
-              <button
-                onClick={loadDemoLog}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/60 hover:bg-slate-800 border border-slate-800 rounded-lg text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer shadow-sm"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                デモデータ（鈴鹿サーキット）をロード
-              </button>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-200">GPS ログファイルのアップロード</h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">ファイルをドロップするか、デバイスから選択してください</p>
             </div>
 
             <UploadZone onFileLoaded={handleFileLoaded} />
@@ -470,14 +487,27 @@ export default function App() {
                 </div>
               </motion.div>
 
-              {/* Racetrack Visualizer and Speed Profile Graph */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.15 }}
-              >
-                <TrackPreview points={adjustedFile.points} />
-              </motion.div>
+              {/* Racetrack Visualizer and Speed Profile Graph with Integrated Time Trimming */}
+              {file && adjustedFile && (
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.15 }}
+                >
+                  <TrackPreview 
+                    points={adjustedFile.points} 
+                    fullPoints={fullAdjustedFile?.points}
+                    originalStartTime={file.stats.startTime}
+                    originalEndTime={file.stats.endTime}
+                    totalDurationSec={file.stats.durationSeconds}
+                    trimStartSec={trimStartSec}
+                    trimEndSec={trimEndSec}
+                    timezoneOffset={timezoneOffset}
+                    onTrimChange={handleTrimChange}
+                    onResetTrim={handleResetTrim}
+                  />
+                </motion.div>
+              )}
             </div>
           )}
         </div>

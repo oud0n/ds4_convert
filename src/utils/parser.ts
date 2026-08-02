@@ -20,9 +20,15 @@ export const createNmeaSentence = (sentence: string): string => {
   return `$${sentence}*${checksum.toString(16).toUpperCase().padStart(2, "0")}`;
 };
 
-// AdjustParsedFile shifting timezone and changing talker ID
-export function adjustParsedFile(file: ParsedGPSFile, timezoneOffsetHours: number, talkerId: "GP" | "GN"): ParsedGPSFile {
-  const shiftedPoints = file.points.map(pt => {
+// AdjustParsedFile shifting timezone, changing talker ID, and filtering by optional trim time range
+export function adjustParsedFile(
+  file: ParsedGPSFile, 
+  timezoneOffsetHours: number, 
+  talkerId: "GP" | "GN",
+  trimStartMs?: number | null,
+  trimEndMs?: number | null
+): ParsedGPSFile {
+  let shiftedPoints = file.points.map(pt => {
     if (!pt.time) return pt;
     
     // Shift the timestamp by selected offset
@@ -65,6 +71,17 @@ export function adjustParsedFile(file: ParsedGPSFile, timezoneOffsetHours: numbe
     };
   });
 
+  // Filter points by trimStartMs and trimEndMs (applied on the shifted time scale)
+  if (trimStartMs != null || trimEndMs != null) {
+    shiftedPoints = shiftedPoints.filter(p => {
+      if (!p.time) return true;
+      const t = p.time.getTime();
+      if (trimStartMs != null && t < trimStartMs) return false;
+      if (trimEndMs != null && t > trimEndMs) return false;
+      return true;
+    });
+  }
+
   const validTimes = shiftedPoints.map(p => p.time).filter((t): t is Date => t !== null);
   const startTime = validTimes.length > 0 ? new Date(Math.min(...validTimes.map(t => t.getTime()))) : null;
   const endTime = validTimes.length > 0 ? new Date(Math.max(...validTimes.map(t => t.getTime()))) : null;
@@ -76,9 +93,25 @@ export function adjustParsedFile(file: ParsedGPSFile, timezoneOffsetHours: numbe
     if (p.rawRmc) rawNmeaLines.push(p.rawRmc);
   });
 
+  let maxSpeedKmh = 0;
+  let speedSum = 0;
+  let speedCount = 0;
+
+  shiftedPoints.forEach(p => {
+    if (p.speedKmh !== null && p.speedKmh > maxSpeedKmh) {
+      maxSpeedKmh = p.speedKmh;
+    }
+    if (p.speedKmh !== null) {
+      speedSum += p.speedKmh;
+      speedCount++;
+    }
+  });
+
   const durationSeconds = startTime && endTime 
     ? Math.round((endTime.getTime() - startTime.getTime()) / 1000) 
     : 0;
+
+  const averageSpeedKmh = speedCount > 0 ? speedSum / speedCount : 0;
 
   return {
     ...file,
@@ -88,7 +121,14 @@ export function adjustParsedFile(file: ParsedGPSFile, timezoneOffsetHours: numbe
       ...file.stats,
       startTime,
       endTime,
-      durationSeconds
+      durationSeconds,
+      pointCount: shiftedPoints.length,
+      maxSpeedKmh,
+      averageSpeedKmh,
+      startLat: shiftedPoints[0]?.latitude ?? null,
+      startLon: shiftedPoints[0]?.longitude ?? null,
+      endLat: shiftedPoints[shiftedPoints.length - 1]?.latitude ?? null,
+      endLon: shiftedPoints[shiftedPoints.length - 1]?.longitude ?? null
     }
   };
 }
@@ -759,77 +799,4 @@ export function parseFile(name: string, bytes: Uint8Array): ParsedGPSFile {
   }
   const text = arrayBufferToString(bytes);
   return parseNmeaLog(name, text);
-}
-
-// Generate realistic motorsport NMEA log (Suzuka Circuit, Japan)
-export function generateMockSuzukaLog(name: string = "suzuka_hotlap_digspice.dg1"): ParsedGPSFile {
-  const sentences: string[] = [];
-  const numPoints = 120; // 120 seconds of telemetry
-
-  // Base coordinates for Suzuka Circuit (near First Corner / Main Straight)
-  const baseLat = 34.8450;
-  const baseLon = 136.5390;
-
-  const now = new Date();
-  
-  for (let i = 0; i < numPoints; i++) {
-    const pointTime = new Date(now.getTime() + i * 1000);
-    const timeStr = pointTime.getUTCHours().toString().padStart(2, "0") +
-                    pointTime.getUTCMinutes().toString().padStart(2, "0") +
-                    pointTime.getUTCSeconds().toString().padStart(2, "0") + ".00";
-
-    const dateStr = pointTime.getUTCDate().toString().padStart(2, "0") +
-                    (pointTime.getUTCMonth() + 1).toString().padStart(2, "0") +
-                    (pointTime.getUTCFullYear() % 100).toString().padStart(2, "0");
-
-    // Simulate car moving along a track: acceleration down straight, braking into corners
-    const angle = (i / numPoints) * 2 * Math.PI * 1.5; // 1.5 laps around a race loop
-    const radius = 0.003 + 0.001 * Math.sin(angle * 2); // complex circuit shape
-    
-    const lat = baseLat + radius * Math.cos(angle);
-    const lon = baseLon + radius * Math.sin(angle) * 1.1; // scale longitude slightly
-
-    // Speed profile (accelerating and braking)
-    // High speed down straight, low speed in corners
-    const straightMultiplier = Math.sin(angle * 3) > 0 ? 1 : 0.3;
-    const speedKmh = 70 + 135 * Math.abs(Math.cos(angle * 1.5)) * straightMultiplier;
-    const speedKnots = speedKmh / 1.852;
-
-    // Course heading (tangent of circuit curve)
-    const rawHeading = (angle * (180 / Math.PI) + 90) % 360;
-    const heading = rawHeading < 0 ? rawHeading + 360 : rawHeading;
-
-    const altitude = 18.5 + 4.5 * Math.sin(i * 0.1); // hills at Suzuka
-    const satellites = 10 + (i % 3); // steady multi-GNSS sat lock
-
-    // Format coordinates to DDMM.MMMM
-    const latDeg = Math.floor(lat);
-    const latMin = (lat - latDeg) * 60;
-    const latNmea = `${latDeg.toString().padStart(2, "0")}${latMin.toFixed(4)}`;
-
-    const lonDeg = Math.floor(lon);
-    const lonMin = (lon - lonDeg) * 60;
-    const lonNmea = `${lonDeg.toString().padStart(3, "0")}${lonMin.toFixed(4)}`;
-
-    // 1. Generate $GPGGA Sentence
-    const ggaNoChecksum = `GPGGA,${timeStr},${latNmea},N,${lonNmea},E,1,${satellites.toString().padStart(2, "0")},0.9,${altitude.toFixed(1)},M,35.2,M,,`;
-    let ggaChecksum = 0;
-    for (let c = 0; c < ggaNoChecksum.length; c++) {
-      ggaChecksum ^= ggaNoChecksum.charCodeAt(c);
-    }
-    const ggaSentence = `$${ggaNoChecksum}*${ggaChecksum.toString(16).toUpperCase().padStart(2, "0")}`;
-    sentences.push(ggaSentence);
-
-    // 2. Generate $GPRMC Sentence
-    const rmcNoChecksum = `GPRMC,${timeStr},A,${latNmea},N,${lonNmea},E,${speedKnots.toFixed(2)},${heading.toFixed(1)},${dateStr},,,A`;
-    let rmcChecksum = 0;
-    for (let c = 0; c < rmcNoChecksum.length; c++) {
-      rmcChecksum ^= rmcNoChecksum.charCodeAt(c);
-    }
-    const rmcSentence = `$${rmcNoChecksum}*${rmcChecksum.toString(16).toUpperCase().padStart(2, "0")}`;
-    sentences.push(rmcSentence);
-  }
-
-  const rawNmeaString = sentences.join("\n");
-  return parseNmeaLog(name, rawNmeaString);
 }
