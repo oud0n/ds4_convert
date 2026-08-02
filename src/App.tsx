@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Navigation, 
   Upload, 
@@ -10,7 +10,10 @@ import {
   MapPin, 
   CheckCircle, 
   HelpCircle, 
-  Info
+  Info,
+  Sun,
+  Moon,
+  Monitor
 } from "lucide-react";
 import { motion } from "motion/react";
 import { UploadZone } from "./components/UploadZone";
@@ -26,6 +29,36 @@ export default function App() {
   const [talkerId, setTalkerId] = useState<"GP" | "GN">("GP");
   const [trimStartSec, setTrimStartSec] = useState<number>(0);
   const [trimEndSec, setTrimEndSec] = useState<number>(0);
+
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+    return (localStorage.getItem("theme") as "light" | "dark" | "system") || "system";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const applyTheme = () => {
+      const isDark =
+        theme === "dark" ||
+        (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      if (isDark) {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+    };
+
+    applyTheme();
+    localStorage.setItem("theme", theme);
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      if (theme === "system") {
+        applyTheme();
+      }
+    };
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [theme]);
 
   const handleFileLoaded = (loadedFile: ParsedGPSFile) => {
     setFile(loadedFile);
@@ -141,127 +174,154 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased font-sans">
-      {/* Decorative top ambient bar */}
-      <div className="h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 w-full" />
-
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col antialiased font-sans transition-colors duration-200">
       {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-6 md:p-12 flex flex-col gap-8 justify-center">
+      <main className="flex-1 max-w-4xl w-full mx-auto p-6 md:p-10 flex flex-col gap-6 justify-center">
         
-        {/* Simple elegant header */}
-        <div className="text-center flex flex-col items-center gap-3">
-          <div className="bg-gradient-to-br from-emerald-400 to-teal-600 p-3 rounded-2xl text-slate-950 shadow-lg shadow-emerald-500/10">
-            <Compass className="w-8 h-8 text-slate-950 animate-pulse" />
+        {/* Header with Theme Switcher */}
+        <div className="relative text-center flex flex-col items-center gap-2 pt-4">
+          {/* Theme Switcher Toggle */}
+          <div className="absolute right-0 top-0 flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg border border-slate-300/50 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              title="ライトモード"
+              className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                theme === "light"
+                  ? "bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-semibold"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              <Sun className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              title="ダークモード"
+              className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                theme === "dark"
+                  ? "bg-white dark:bg-slate-700 text-blue-400 shadow-xs font-semibold"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              <Moon className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("system")}
+              title="システム設定に従う"
+              className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                theme === "system"
+                  ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-semibold"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              <Monitor className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 p-3 rounded-xl text-blue-600 dark:text-blue-400 mt-2 sm:mt-0">
+            <Compass className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-100">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
               BNX4 NMEA Converter
             </h1>
-            <p className="text-xs text-slate-400 mt-1 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
               GPS ログ 変換ツール
             </p>
           </div>
-          <p className="text-sm text-slate-400 max-w-md mt-2 leading-relaxed">
-            デジスパイス4のbnx4、bon4をnmeaに変換するアプリです。RaceChronoやGoogle Earth等で読み込み可能な標準フォーマットに変換します。
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+            デジスパイス4の bnx4 / bon4 ログを RaceChrono や Google Earth 等で読み込み可能な標準 NMEA / GPX / CSV フォーマットに変換します。
           </p>
         </div>
 
         {/* Upload Zone */}
         <div className="grid grid-cols-1 gap-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="bg-slate-900/20 border border-slate-900 rounded-2xl p-6 flex flex-col gap-5 shadow-xl shadow-slate-950/40"
-          >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-sm">
             <div>
-              <h2 className="text-sm font-semibold text-slate-200">GPS ログファイルのアップロード</h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">ファイルをドロップするか、デバイスから選択してください</p>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">GPS ログファイルのアップロード</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ファイルをドロップするか、デバイスから選択してください</p>
             </div>
 
             <UploadZone onFileLoaded={handleFileLoaded} />
-          </motion.div>
+          </div>
 
           {/* Active File Context & Conversion Panel */}
           {adjustedFile && (
             <div className="flex flex-col gap-6">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-              >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Left Column: Track Info Summary */}
-                <div className="bg-slate-900/30 border border-slate-900 rounded-2xl p-6 flex flex-col gap-5 shadow-xl">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-sm">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase font-mono">
+                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wider uppercase font-mono">
                       Track Information / 走行ログ概要
                     </h3>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-900/30">
-                        <Navigation className="w-5 h-5 text-emerald-400 rotate-45" />
+                    <div className="mt-2.5 flex items-center gap-3">
+                      <div className="bg-blue-50 dark:bg-blue-950/60 p-2.5 rounded-lg border border-blue-100 dark:border-blue-900">
+                        <Navigation className="w-5 h-5 text-blue-600 dark:text-blue-400 rotate-45" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs text-slate-500 font-mono">FILE NAME</p>
-                        <p className="text-sm font-semibold text-slate-200 font-mono truncate">{adjustedFile.metadata.name}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">FILE NAME</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 font-mono truncate">{adjustedFile.metadata.name}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Main statistics bento grid */}
-                  <div className="grid grid-cols-2 gap-3.5 mt-2">
-                    <div className="bg-slate-950/50 border border-slate-900/60 p-3 rounded-xl flex flex-col gap-1">
-                      <div className="flex items-center gap-1 text-slate-500">
+                  {/* Main statistics grid */}
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-2.5 rounded-lg flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                         <Clock className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-bold tracking-wider uppercase font-mono">Duration / 走行時間</span>
+                        <span className="text-[10px] font-medium font-mono">Duration / 走行時間</span>
                       </div>
-                      <span className="text-sm font-bold text-slate-100">{formatDuration(adjustedFile.stats.durationSeconds)}</span>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{formatDuration(adjustedFile.stats.durationSeconds)}</span>
                     </div>
 
-                    <div className="bg-slate-950/50 border border-slate-900/60 p-3 rounded-xl flex flex-col gap-1">
-                      <div className="flex items-center gap-1 text-slate-500">
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-2.5 rounded-lg flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                         <MapPin className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-bold tracking-wider uppercase font-mono">Points / GPSログ数</span>
+                        <span className="text-[10px] font-medium font-mono">Points / GPSログ数</span>
                       </div>
-                      <span className="text-sm font-bold text-slate-100 font-mono">{adjustedFile.stats.pointCount.toLocaleString()} 点</span>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 font-mono">{adjustedFile.stats.pointCount.toLocaleString()} 点</span>
                     </div>
 
-                    <div className="bg-slate-950/50 border border-slate-900/60 p-3 rounded-xl flex flex-col gap-1">
-                      <div className="flex items-center gap-1 text-slate-500">
-                        <Gauge className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-bold tracking-wider uppercase font-mono">Max Speed / 最高車速</span>
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-2.5 rounded-lg flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                        <Gauge className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span className="text-[10px] font-medium font-mono">Max Speed / 最高車速</span>
                       </div>
-                      <span className="text-sm font-bold text-emerald-400 font-mono">
-                        {adjustedFile.stats.maxSpeedKmh.toFixed(1)} <span className="text-[10px] text-slate-500">km/h</span>
+                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400 font-mono">
+                        {adjustedFile.stats.maxSpeedKmh.toFixed(1)} <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">km/h</span>
                       </span>
                     </div>
 
-                    <div className="bg-slate-950/50 border border-slate-900/60 p-3 rounded-xl flex flex-col gap-1">
-                      <div className="flex items-center gap-1 text-slate-500">
-                        <Gauge className="w-3.5 h-3.5 text-slate-600" />
-                        <span className="text-[9px] font-bold tracking-wider uppercase font-mono">Avg Speed / 平均車速</span>
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-2.5 rounded-lg flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                        <Gauge className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                        <span className="text-[10px] font-medium font-mono">Avg Speed / 平均車速</span>
                       </div>
-                      <span className="text-sm font-semibold text-slate-300 font-mono">
-                        {adjustedFile.stats.averageSpeedKmh.toFixed(1)} <span className="text-[10px] text-slate-500">km/h</span>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 font-mono">
+                        {adjustedFile.stats.averageSpeedKmh.toFixed(1)} <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">km/h</span>
                       </span>
                     </div>
                   </div>
 
                   {/* Additional coordinate locks and timeline timestamps */}
-                  <div className="bg-slate-950/30 border border-slate-900 rounded-xl p-3 flex flex-col gap-2 text-xs font-mono text-slate-400">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-lg p-3 flex flex-col gap-1.5 text-xs font-mono text-slate-600 dark:text-slate-300">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-500">START TIME ({tzLabel})</span>
-                      <span className="text-slate-300">{formatTime(adjustedFile.stats.startTime)}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">START TIME ({tzLabel})</span>
+                      <span className="text-slate-700 dark:text-slate-200 font-medium">{formatTime(adjustedFile.stats.startTime)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-500">END TIME ({tzLabel})</span>
-                      <span className="text-slate-300">{formatTime(adjustedFile.stats.endTime)}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">END TIME ({tzLabel})</span>
+                      <span className="text-slate-700 dark:text-slate-200 font-medium">{formatTime(adjustedFile.stats.endTime)}</span>
                     </div>
-                    <div className="h-px bg-slate-900 my-1" />
+                    <div className="h-px bg-slate-200 dark:bg-slate-700 my-0.5" />
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-500">COORDINATES</span>
-                      <span className="text-[11px] text-slate-300">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">COORDINATES</span>
+                      <span className="text-[11px] text-slate-700 dark:text-slate-200">
                         {adjustedFile.stats.startLat?.toFixed(5)}, {adjustedFile.stats.startLon?.toFixed(5)}
                       </span>
                     </div>
@@ -269,27 +329,27 @@ export default function App() {
                 </div>
 
                 {/* Right Column: Converter and Exporter Panel */}
-                <div className="bg-slate-900/30 border border-slate-900 rounded-2xl p-6 flex flex-col gap-5 justify-between shadow-xl">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-4 justify-between shadow-sm">
                   <div className="flex flex-col gap-4">
                     
                     {/* Timezone and Talker ID settings */}
-                    <div className="bg-slate-950/40 p-4 border border-slate-900 rounded-xl flex flex-col gap-3">
-                      <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase font-mono">
+                    <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 border border-slate-200 dark:border-slate-700/60 rounded-lg flex flex-col gap-3">
+                      <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wider uppercase font-mono">
                         Conversion Settings / 変換設定
                       </h3>
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase font-mono">
-                            Timezone / 時差補正
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 font-mono">
+                            時差補正
                           </span>
-                          <div className="flex bg-slate-950/80 rounded-lg p-0.5 border border-slate-900">
+                          <div className="flex bg-slate-200/70 dark:bg-slate-700/70 rounded-md p-0.5">
                             <button
                               type="button"
                               onClick={() => setTimezoneOffset(9)}
-                              className={`flex-1 py-1 text-[9px] font-bold rounded-md transition-all cursor-pointer ${
+                              className={`flex-1 py-1 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
                                 timezoneOffset === 9 
-                                  ? "bg-emerald-500 text-slate-950 shadow-sm" 
-                                  : "text-slate-400 hover:text-slate-200"
+                                  ? "bg-blue-600 text-white shadow-xs" 
+                                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                               }`}
                             >
                               JST (+9h)
@@ -297,10 +357,10 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setTimezoneOffset(0)}
-                              className={`flex-1 py-1 text-[9px] font-bold rounded-md transition-all cursor-pointer ${
+                              className={`flex-1 py-1 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
                                 timezoneOffset === 0 
-                                  ? "bg-emerald-500 text-slate-950 shadow-sm" 
-                                  : "text-slate-400 hover:text-slate-200"
+                                  ? "bg-blue-600 text-white shadow-xs" 
+                                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                               }`}
                             >
                               UTC (+0h)
@@ -308,18 +368,18 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase font-mono">
-                            Talker ID / トーカーID
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 font-mono">
+                            トーカーID
                           </span>
-                          <div className="flex bg-slate-950/80 rounded-lg p-0.5 border border-slate-900">
+                          <div className="flex bg-slate-200/70 dark:bg-slate-700/70 rounded-md p-0.5">
                             <button
                               type="button"
                               onClick={() => setTalkerId("GP")}
-                              className={`flex-1 py-1 text-[9px] font-bold rounded-md transition-all cursor-pointer ${
+                              className={`flex-1 py-1 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
                                 talkerId === "GP" 
-                                  ? "bg-emerald-500 text-slate-950 shadow-sm" 
-                                  : "text-slate-400 hover:text-slate-200"
+                                  ? "bg-blue-600 text-white shadow-xs" 
+                                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                               }`}
                             >
                               $GP (GPS)
@@ -327,10 +387,10 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setTalkerId("GN")}
-                              className={`flex-1 py-1 text-[9px] font-bold rounded-md transition-all cursor-pointer ${
+                              className={`flex-1 py-1 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
                                 talkerId === "GN" 
-                                  ? "bg-emerald-500 text-slate-950 shadow-sm" 
-                                  : "text-slate-400 hover:text-slate-200"
+                                  ? "bg-blue-600 text-white shadow-xs" 
+                                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                               }`}
                             >
                               $GN (GNSS)
@@ -338,28 +398,28 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-[9px] text-slate-500 leading-normal">
-                        * 公式アプリの変換はJST(+9h)基準です。RaceChrono等の解析アプリで時差ズレする場合はUTC(+0h)を推奨します。
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal">
+                        * 公式アプリの出力はJST(+9h)基準です。RaceChrono等の解析アプリで時刻がズレる場合はUTC(+0h)をお試しください。
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase font-mono">
+                      <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wider uppercase font-mono">
                         Export Format Selection / 変換形式の選択
                       </h3>
-                      <p className="text-[11px] text-slate-500 mt-0.5">ダウンロードするファイル形式を指定してください</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ダウンロードするファイル形式を指定してください</p>
                     </div>
 
                     {/* Format Card Options */}
-                    <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-1">
                       
                       {/* NMEA Card */}
                       <div 
                         onClick={() => setExportFormat("nmea")}
-                        className={`border p-3 rounded-xl cursor-pointer flex flex-col gap-1 transition-all ${
+                        className={`border p-2.5 rounded-lg cursor-pointer flex flex-col gap-0.5 transition-colors ${
                           exportFormat === "nmea"
-                            ? "bg-emerald-950/25 border-emerald-500/80 text-emerald-400"
-                            : "bg-slate-950/20 border-slate-900 hover:border-slate-850 text-slate-300"
+                            ? "bg-blue-50/70 dark:bg-blue-950/50 border-blue-400 dark:border-blue-500 text-blue-900 dark:text-blue-100"
+                            : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -369,10 +429,10 @@ export default function App() {
                             name="exportFormat"
                             checked={exportFormat === "nmea"}
                             onChange={() => setExportFormat("nmea")}
-                            className="accent-emerald-400 cursor-pointer"
+                            className="accent-blue-600 cursor-pointer"
                           />
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
                           標準的なNMEA-0183。RaceChrono、Harry's LapTimer等の解析アプリに最適。
                         </p>
                       </div>
@@ -380,10 +440,10 @@ export default function App() {
                       {/* GPX Card */}
                       <div 
                         onClick={() => setExportFormat("gpx")}
-                        className={`border p-3 rounded-xl cursor-pointer flex flex-col gap-1 transition-all ${
+                        className={`border p-2.5 rounded-lg cursor-pointer flex flex-col gap-0.5 transition-colors ${
                           exportFormat === "gpx"
-                            ? "bg-emerald-950/25 border-emerald-500/80 text-emerald-400"
-                            : "bg-slate-950/20 border-slate-900 hover:border-slate-850 text-slate-300"
+                            ? "bg-blue-50/70 dark:bg-blue-950/50 border-blue-400 dark:border-blue-500 text-blue-900 dark:text-blue-100"
+                            : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -393,10 +453,10 @@ export default function App() {
                             name="exportFormat"
                             checked={exportFormat === "gpx"}
                             onChange={() => setExportFormat("gpx")}
-                            className="accent-emerald-400 cursor-pointer"
+                            className="accent-blue-600 cursor-pointer"
                           />
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
                           Google Earth、Garmin、Strava等で読み込み可能なXML軌跡。
                         </p>
                       </div>
@@ -404,10 +464,10 @@ export default function App() {
                       {/* CSV Card */}
                       <div 
                         onClick={() => setExportFormat("csv")}
-                        className={`border p-3 rounded-xl cursor-pointer flex flex-col gap-1 transition-all ${
+                        className={`border p-2.5 rounded-lg cursor-pointer flex flex-col gap-0.5 transition-colors ${
                           exportFormat === "csv"
-                            ? "bg-emerald-950/25 border-emerald-500/80 text-emerald-400"
-                            : "bg-slate-950/20 border-slate-900 hover:border-slate-850 text-slate-300"
+                            ? "bg-blue-50/70 dark:bg-blue-950/50 border-blue-400 dark:border-blue-500 text-blue-900 dark:text-blue-100"
+                            : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -417,21 +477,21 @@ export default function App() {
                             name="exportFormat"
                             checked={exportFormat === "csv"}
                             onChange={() => setExportFormat("csv")}
-                            className="accent-emerald-400 cursor-pointer"
+                            className="accent-blue-600 cursor-pointer"
                           />
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
                           ExcelやPython Pandas、MATLAB等で車速・位置情報を数値解析するためのデータ。
                         </p>
                       </div>
 
-                      {/* TXT Card (Raw space-separated output format) */}
+                      {/* TXT Card */}
                       <div 
                         onClick={() => setExportFormat("txt")}
-                        className={`border p-3 rounded-xl cursor-pointer flex flex-col gap-1 transition-all ${
+                        className={`border p-2.5 rounded-lg cursor-pointer flex flex-col gap-0.5 transition-colors ${
                           exportFormat === "txt"
-                            ? "bg-emerald-950/25 border-emerald-500/80 text-emerald-400"
-                            : "bg-slate-950/20 border-slate-900 hover:border-slate-850 text-slate-300"
+                            ? "bg-blue-50/70 dark:bg-blue-950/50 border-blue-400 dark:border-blue-500 text-blue-900 dark:text-blue-100"
+                            : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -441,21 +501,21 @@ export default function App() {
                             name="exportFormat"
                             checked={exportFormat === "txt"}
                             onChange={() => setExportFormat("txt")}
-                            className="accent-emerald-400 cursor-pointer"
+                            className="accent-blue-600 cursor-pointer"
                           />
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal">
-                          Pythonスクリプト形式に完全準拠したスペース区切りのタイムスタンプ・座標・車速データ。
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                          スペース区切りのタイムスタンプ・座標・車速データ。
                         </p>
                       </div>
 
                       {/* HTML Map Card */}
                       <div 
                         onClick={() => setExportFormat("html")}
-                        className={`border p-3 rounded-xl cursor-pointer flex flex-col gap-1 transition-all ${
+                        className={`border p-2.5 rounded-lg cursor-pointer flex flex-col gap-0.5 transition-colors ${
                           exportFormat === "html"
-                            ? "bg-emerald-950/25 border-emerald-500/80 text-emerald-400"
-                            : "bg-slate-950/20 border-slate-900 hover:border-slate-850 text-slate-300"
+                            ? "bg-blue-50/70 dark:bg-blue-950/50 border-blue-400 dark:border-blue-500 text-blue-900 dark:text-blue-100"
+                            : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -465,35 +525,31 @@ export default function App() {
                             name="exportFormat"
                             checked={exportFormat === "html"}
                             onChange={() => setExportFormat("html")}
-                            className="accent-emerald-400 cursor-pointer"
+                            className="accent-blue-600 cursor-pointer"
                           />
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal">
-                          Leaflet.jsと暗色地図を採用した、ブラウザで即座に動作する単一ファイルの軌跡マップ。
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                          Leaflet.jsを採用した、ブラウザで即座に動作する単一ファイルの軌跡マップ。
                         </p>
                       </div>
 
                     </div>
                   </div>
 
-                  {/* Big Action Download Button */}
+                  {/* Action Download Button */}
                   <button
                     onClick={handleDownload}
-                    className="w-full mt-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-400/20"
+                    className="w-full mt-3 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs uppercase tracking-wider rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
-                    <FileDown className="w-4 h-4 text-slate-950" />
+                    <FileDown className="w-4 h-4 text-white" />
                     変換ファイルをダウンロード
                   </button>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Racetrack Visualizer and Speed Profile Graph with Integrated Time Trimming */}
               {file && adjustedFile && (
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.15 }}
-                >
+                <div>
                   <TrackPreview 
                     points={adjustedFile.points} 
                     fullPoints={fullAdjustedFile?.points}
@@ -506,27 +562,27 @@ export default function App() {
                     onTrimChange={handleTrimChange}
                     onResetTrim={handleResetTrim}
                   />
-                </motion.div>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Minimal Information Sidebar / Footer */}
-        <div className="bg-slate-900/10 border border-slate-900 rounded-2xl p-6 flex flex-col gap-3 shadow-md">
-          <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase font-mono flex items-center gap-1.5">
-            <Info className="w-4 h-4 text-emerald-400" />
+        {/* Information Section */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-3 shadow-sm">
+          <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-200 tracking-wider uppercase font-mono flex items-center gap-1.5">
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             仕様とセキュリティについて
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400 leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
             <div className="flex flex-col gap-1">
-              <span className="font-semibold text-slate-300">bnx4 / bon4 仕様への互換</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">bnx4 / bon4 仕様への互換</span>
               <p>
                 bnx4 / bon4 のログデータは内部的にNMEA-0183に準拠しています。本ツールは独自の拡張子を判定し、標準的なGPSソフトウェアで読み込めるようNMEA行を最適化、またはGPX/CSVへ整形します。
               </p>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="font-semibold text-slate-300">セキュアなブラウザ処理 (100% Client-Side)</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">セキュアなブラウザ処理 (100% Client-Side)</span>
               <p>
                 お使いのログファイルがサーバーに送信されることはありません。すべてのデコード、解析、変換処理はお使いのブラウザ内部で安全に行われます。完全オフライン環境でも動作します。
               </p>
@@ -538,3 +594,4 @@ export default function App() {
     </div>
   );
 }
+

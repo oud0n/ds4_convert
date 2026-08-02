@@ -265,22 +265,22 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
   const endPercent = maxSec > 0 ? (currentEndSec / maxSec) * 100 : 100;
 
   return (
-    <div className="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex flex-col gap-5 shadow-xl">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-5 shadow-sm">
       {/* Top Header */}
       <div className="flex flex-wrap justify-between items-center gap-2">
         <div>
-          <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase font-mono flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+          <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-200 font-mono flex items-center gap-1.5">
+            <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Telemetry Analysis / 走行データ解析 & 時間指定トリミング
           </h3>
-          <p className="text-[11px] text-slate-500 mt-0.5">車速グラフで抽出区間の開始・終了時刻を設定できます</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">車速グラフで抽出区間の開始・終了時刻を設定できます</p>
         </div>
 
         {isTrimmed && onResetTrim && (
           <button
             type="button"
             onClick={onResetTrim}
-            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-950/40 border border-amber-900/60 px-3 py-1 rounded-lg transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-lg transition-colors cursor-pointer shadow-xs"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             全期間表示に戻す
@@ -290,8 +290,8 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
         {/* Track Trace Visualizer */}
-        <div className="md:col-span-3 flex flex-col items-center justify-center bg-slate-950/60 border border-slate-900/80 rounded-xl p-3 relative h-[300px]">
-          <span className="absolute top-2.5 left-2.5 text-[9px] font-bold text-slate-600 tracking-widest font-mono uppercase">
+        <div className="md:col-span-3 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-3 relative h-[300px]">
+          <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono uppercase">
             CIRCUIT ROUTE TRACE / コース図
           </span>
 
@@ -303,8 +303,9 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               {/* Full track background polyline */}
               <polyline
                 fill="none"
-                stroke="#1e293b"
-                strokeWidth="5"
+                stroke="currentColor"
+                className="text-slate-300 dark:text-slate-600"
+                strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 points={fullPolylineStr}
@@ -313,12 +314,11 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               {/* Trimmed active track segment */}
               <polyline
                 fill="none"
-                stroke="#10b981"
+                stroke="#2563eb"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 points={trimmedPolylineStr}
-                className="drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
               />
 
               {/* Trimmed Start marker indicator */}
@@ -331,37 +331,37 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               {/* Trimmed End marker indicator */}
               {trimmedProjectedData.length > 1 && (
                 <g transform={`translate(${trimmedProjectedData[trimmedProjectedData.length - 1].x}, ${trimmedProjectedData[trimmedProjectedData.length - 1].y})`}>
-                  <circle r="6" fill="#f43f5e" stroke="#ffffff" strokeWidth="1.5" />
+                  <circle r="6" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
                 </g>
               )}
 
-              {/* Active / Hovered vehicle location glowing dot */}
+              {/* Active / Hovered vehicle location dot */}
               {activePoint && (
                 <g transform={`translate(${activePoint.x}, ${activePoint.y})`}>
-                  <circle r="10" fill="rgba(16, 185, 129, 0.3)" className="animate-ping" />
-                  <circle r="6" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" className="shadow-lg" />
+                  <circle r="8" fill="rgba(37, 99, 235, 0.2)" />
+                  <circle r="5" fill="#0284c7" stroke="#ffffff" strokeWidth="1.5" />
                 </g>
               )}
             </svg>
           )}
 
           {/* Map Legends */}
-          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-3 text-[9px] font-mono text-slate-500">
+          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-3 text-[10px] font-mono text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 border border-white/20" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 border border-slate-200 dark:border-slate-700" />
               <span>抽出開始 (START)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500 border border-white/20" />
+              <span className="w-2 h-2 rounded-full bg-red-500 border border-slate-200 dark:border-slate-700" />
               <span>抽出終了 (END)</span>
             </div>
           </div>
         </div>
 
         {/* Live Telemetry Display */}
-        <div className="md:col-span-2 flex flex-col justify-between gap-3 bg-slate-950/30 border border-slate-900/60 rounded-xl p-4">
+        <div className="md:col-span-2 flex flex-col justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4">
           <div className="flex flex-col gap-3">
-            <span className="text-[9px] font-bold text-slate-500 tracking-wider font-mono uppercase">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 font-mono uppercase">
               LIVE TELEMETRY / リアルタイム表示
             </span>
             
@@ -369,38 +369,38 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               <div className="flex flex-col gap-3 mt-1">
                 {/* Speed */}
                 <div className="flex items-center gap-3">
-                  <div className="bg-emerald-950/40 p-2 rounded-lg border border-emerald-900/30">
-                    <Gauge className="w-4 h-4 text-emerald-400" />
+                  <div className="bg-blue-50 dark:bg-blue-950/60 p-2 rounded-lg border border-blue-100 dark:border-blue-900 text-blue-600 dark:text-blue-400">
+                    <Gauge className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-mono">SPEED</span>
-                    <span className="text-xl font-bold font-mono text-emerald-400">
-                      {activePoint.speed.toFixed(1)} <span className="text-xs text-slate-500">km/h</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">SPEED</span>
+                    <span className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400">
+                      {activePoint.speed.toFixed(1)} <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">km/h</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Heading */}
                 <div className="flex items-center gap-3">
-                  <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                    <Compass className="w-4 h-4 text-slate-400" />
+                  <div className="bg-white dark:bg-slate-700/60 p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300">
+                    <Compass className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-mono">HEADING</span>
-                    <span className="text-sm font-semibold font-mono text-slate-200">
-                      {activePoint.heading.toFixed(1)}° <span className="text-xs text-slate-500">DEG</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">HEADING</span>
+                    <span className="text-sm font-semibold font-mono text-slate-700 dark:text-slate-200">
+                      {activePoint.heading.toFixed(1)}° <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">DEG</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Time */}
                 <div className="flex items-center gap-3">
-                  <div className="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                    <Clock className="w-4 h-4 text-slate-400" />
+                  <div className="bg-white dark:bg-slate-700/60 p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300">
+                    <Clock className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-mono">TIME</span>
-                    <span className="text-xs font-mono text-slate-300">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">TIME</span>
+                    <span className="text-xs font-mono text-slate-700 dark:text-slate-200 font-medium">
                       {secToFormattedTime(activePoint.sec)}
                     </span>
                   </div>
@@ -408,16 +408,16 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
 
                 {/* Quick Set Start / End Buttons for hovered point */}
                 {onTrimChange && (
-                  <div className="flex gap-2 mt-1 pt-2 border-t border-slate-900">
+                  <div className="flex gap-2 mt-1 pt-2 border-t border-slate-200 dark:border-slate-700">
                     <button
                       type="button"
                       onClick={() => {
                         const newStart = Math.min(activePoint.sec, currentEndSec - 1);
                         onTrimChange(newStart, currentEndSec);
                       }}
-                      className="flex-1 py-1.5 px-2 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg text-[10px] font-bold text-emerald-300 flex items-center justify-center gap-1 cursor-pointer transition-all shadow-sm active:scale-95"
+                      className="flex-1 py-1.5 px-2 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Flag className="w-3 h-3 text-emerald-400" />
+                      <Flag className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       ここを開始地に設定
                     </button>
                     <button
@@ -426,45 +426,45 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                         const newEnd = Math.max(activePoint.sec, currentStartSec + 1);
                         onTrimChange(currentStartSec, newEnd);
                       }}
-                      className="flex-1 py-1.5 px-2 bg-rose-950/80 hover:bg-rose-900 border border-rose-700/60 rounded-lg text-[10px] font-bold text-rose-300 flex items-center justify-center gap-1 cursor-pointer transition-all shadow-sm active:scale-95"
+                      className="flex-1 py-1.5 px-2 bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/60 border border-red-200 dark:border-red-800 rounded-lg text-[10px] font-semibold text-red-700 dark:text-red-300 flex items-center justify-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Flag className="w-3 h-3 text-rose-400" />
+                      <Flag className="w-3 h-3 text-red-600 dark:text-red-400" />
                       ここを終了地に設定
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-xs text-slate-500 italic py-6 text-center">
+              <div className="text-xs text-slate-400 dark:text-slate-500 italic py-6 text-center">
                 グラフにカーソルを合わせるとテレメトリが表示されます
               </div>
             )}
           </div>
 
-          <div className="border-t border-slate-900 pt-2.5 flex flex-col gap-1 text-[10px] text-slate-500 font-mono">
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex flex-col gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
             <div className="flex justify-between">
               <span>LATITUDE:</span>
-              <span className="text-slate-400">{activePoint?.y !== undefined ? validPoints[activePoint.index].latitude?.toFixed(6) : "--"}</span>
+              <span className="text-slate-700 dark:text-slate-200">{activePoint?.y !== undefined ? validPoints[activePoint.index].latitude?.toFixed(6) : "--"}</span>
             </div>
             <div className="flex justify-between">
               <span>LONGITUDE:</span>
-              <span className="text-slate-400">{activePoint?.x !== undefined ? validPoints[activePoint.index].longitude?.toFixed(6) : "--"}</span>
+              <span className="text-slate-700 dark:text-slate-200">{activePoint?.x !== undefined ? validPoints[activePoint.index].longitude?.toFixed(6) : "--"}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Speed Graph Profile & Interactive Time Trimming Controls */}
-      <div className="bg-slate-950/60 border border-slate-900 rounded-xl p-4 flex flex-col gap-3">
+      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 flex flex-col gap-3">
         <div className="flex flex-wrap justify-between items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono uppercase flex items-center gap-1.5">
-            <Scissors className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 font-mono uppercase flex items-center gap-1.5">
+            <Scissors className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             SPEED PROFILE / 車速グラフ (km/h) & 時間トリミング
           </span>
 
-          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+          <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
             <span>抽出範囲:</span>
-            <span className="text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-900/50">
+            <span className="text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
               {secToFormattedTime(currentStartSec)} ~ {secToFormattedTime(currentEndSec)}
             </span>
           </div>
@@ -488,24 +488,24 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
             >
               <defs>
                 <linearGradient id="speedGlow" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
               
               <XAxis 
                 dataKey="sec" 
                 type="number"
                 domain={[0, maxSec]}
-                stroke="#475569" 
+                stroke="#94a3b8" 
                 fontSize={9} 
                 tickLine={false} 
                 axisLine={false}
                 tickFormatter={(s) => secToFormattedTime(s)}
               />
               <YAxis 
-                stroke="#475569" 
+                stroke="#94a3b8" 
                 fontSize={9} 
                 tickLine={false} 
                 axisLine={false} 
@@ -516,9 +516,9 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="bg-slate-900 border border-slate-800 p-2 rounded shadow-lg text-[10px] font-mono text-slate-200">
-                        <div className="text-slate-400 font-bold mb-0.5">TIME: {data.name}</div>
-                        <div className="text-emerald-400 font-bold">SPEED: {data.speed} km/h</div>
+                      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded shadow-md text-[10px] font-mono text-slate-800 dark:text-slate-100">
+                        <div className="text-slate-500 dark:text-slate-400 font-semibold mb-0.5">TIME: {data.name}</div>
+                        <div className="text-blue-600 dark:text-blue-400 font-bold">SPEED: {data.speed} km/h</div>
                       </div>
                     );
                   }
@@ -528,10 +528,10 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
 
               {/* Dim out excluded ranges */}
               {currentStartSec > 0 && (
-                <ReferenceArea x1={0} x2={currentStartSec} fill="#020617" fillOpacity={0.65} />
+                <ReferenceArea x1={0} x2={currentStartSec} fill="#64748b" fillOpacity={0.25} />
               )}
               {currentEndSec < maxSec && (
-                <ReferenceArea x1={currentEndSec} x2={maxSec} fill="#020617" fillOpacity={0.65} />
+                <ReferenceArea x1={currentEndSec} x2={maxSec} fill="#64748b" fillOpacity={0.25} />
               )}
 
               {/* Vertical Reference Lines for Start and End */}
@@ -543,15 +543,15 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               />
               <ReferenceLine 
                 x={currentEndSec} 
-                stroke="#f43f5e" 
+                stroke="#ef4444" 
                 strokeWidth={2}
-                label={{ value: "🏁 終了", fill: "#f43f5e", fontSize: 10, position: "top" }}
+                label={{ value: "🏁 終了", fill: "#ef4444", fontSize: 10, position: "top" }}
               />
 
               <Area 
                 type="monotone" 
                 dataKey="speed" 
-                stroke="#10b981" 
+                stroke="#2563eb" 
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#speedGlow)" 
@@ -562,13 +562,13 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
 
         {/* Integrated Range Sliders & Time Input Controls */}
         {onTrimChange && maxSec > 0 && (
-          <div className="flex flex-col gap-3 mt-1 pt-3 border-t border-slate-900">
+          <div className="flex flex-col gap-3 mt-1 pt-3 border-t border-slate-200 dark:border-slate-700/60">
             {/* Visual dual slider bar */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
                   <span>開始スライダー</span>
-                  <span className="text-emerald-400 font-bold">{secToFormattedTime(currentStartSec)}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{secToFormattedTime(currentStartSec)}</span>
                 </div>
                 <input
                   type="range"
@@ -576,14 +576,14 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                   max={Math.max(0, currentEndSec - 1)}
                   value={currentStartSec}
                   onChange={(e) => onTrimChange(Number(e.target.value), currentEndSec)}
-                  className="w-full accent-emerald-400 h-1.5 bg-slate-900 rounded-lg cursor-pointer"
+                  className="w-full accent-emerald-600 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
                   <span>終了スライダー</span>
-                  <span className="text-rose-400 font-bold">{secToFormattedTime(currentEndSec)}</span>
+                  <span className="text-red-600 dark:text-red-400 font-semibold">{secToFormattedTime(currentEndSec)}</span>
                 </div>
                 <input
                   type="range"
@@ -591,7 +591,7 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                   max={maxSec}
                   value={currentEndSec}
                   onChange={(e) => onTrimChange(currentStartSec, Number(e.target.value))}
-                  className="w-full accent-rose-400 h-1.5 bg-slate-900 rounded-lg cursor-pointer"
+                  className="w-full accent-red-600 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
                 />
               </div>
             </div>
@@ -599,10 +599,10 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
             {/* Steppers & Text Inputs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Start Time Input */}
-              <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-850 flex flex-col gap-1.5">
-                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 font-bold">
-                  <span className="text-emerald-400">🚩 START / 開始時刻</span>
-                  <span className="text-slate-500 font-normal">HH:mm:ss</span>
+              <div className="bg-white dark:bg-slate-800/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400 font-semibold">
+                  <span className="text-emerald-700 dark:text-emerald-400">🚩 START / 開始時刻</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-normal">HH:mm:ss</span>
                 </div>
                 <input
                   type="text"
@@ -610,34 +610,34 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                   onChange={(e) => setStartTimeInput(e.target.value)}
                   onBlur={handleStartBlur}
                   onKeyDown={(e) => e.key === "Enter" && handleStartBlur()}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 text-center"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2.5 py-1 text-xs font-mono font-semibold text-emerald-700 dark:text-emerald-400 focus:outline-none focus:border-emerald-500 text-center"
                 />
                 <div className="flex gap-1 justify-center">
                   <button
                     type="button"
                     onClick={() => adjustStart(-60)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     -1分
                   </button>
                   <button
                     type="button"
                     onClick={() => adjustStart(-10)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     -10秒
                   </button>
                   <button
                     type="button"
                     onClick={() => adjustStart(10)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     +10秒
                   </button>
                   <button
                     type="button"
                     onClick={() => adjustStart(60)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     +1分
                   </button>
@@ -645,10 +645,10 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               </div>
 
               {/* End Time Input */}
-              <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-850 flex flex-col gap-1.5">
-                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 font-bold">
-                  <span className="text-rose-400">🏁 END / 終了時刻</span>
-                  <span className="text-slate-500 font-normal">HH:mm:ss</span>
+              <div className="bg-white dark:bg-slate-800/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400 font-semibold">
+                  <span className="text-red-700 dark:text-red-400">🏁 END / 終了時刻</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-normal">HH:mm:ss</span>
                 </div>
                 <input
                   type="text"
@@ -656,34 +656,34 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                   onChange={(e) => setEndTimeInput(e.target.value)}
                   onBlur={handleEndBlur}
                   onKeyDown={(e) => e.key === "Enter" && handleEndBlur()}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-bold text-rose-400 focus:outline-none focus:border-rose-500 text-center"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2.5 py-1 text-xs font-mono font-semibold text-red-700 dark:text-red-400 focus:outline-none focus:border-red-500 text-center"
                 />
                 <div className="flex gap-1 justify-center">
                   <button
                     type="button"
                     onClick={() => adjustEnd(-60)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     -1分
                   </button>
                   <button
                     type="button"
                     onClick={() => adjustEnd(-10)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     -10秒
                   </button>
                   <button
                     type="button"
                     onClick={() => adjustEnd(10)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     +10秒
                   </button>
                   <button
                     type="button"
                     onClick={() => adjustEnd(60)}
-                    className="flex-1 py-1 text-[9px] font-mono font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-all cursor-pointer"
+                    className="flex-1 py-1 text-[10px] font-mono font-medium bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
                   >
                     +1分
                   </button>
@@ -696,3 +696,4 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
     </div>
   );
 };
+
