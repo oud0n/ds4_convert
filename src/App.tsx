@@ -13,7 +13,8 @@ import {
   Info,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Coffee
 } from "lucide-react";
 import { motion } from "motion/react";
 import { UploadZone } from "./components/UploadZone";
@@ -178,10 +179,20 @@ export default function App() {
       {/* Main Container */}
       <main className="flex-1 max-w-4xl w-full mx-auto p-6 md:p-10 flex flex-col gap-6 justify-center">
         
-        {/* Header with Theme Switcher */}
-        <div className="relative text-center flex flex-col items-center gap-2 pt-4">
-          {/* Theme Switcher Toggle */}
-          <div className="absolute right-0 top-0 flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg border border-slate-300/50 dark:border-slate-700">
+        {/* Top Bar: Buy Me a Coffee & Theme Switcher */}
+        <div className="flex items-center justify-between w-full pt-2">
+          <a
+            href="https://buymeacoffee.com/oud0n"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FFDD00] hover:bg-[#ffe338] text-zinc-900 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <Coffee className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Buy Me a Coffee</span>
+            <span className="sm:hidden">Donate</span>
+          </a>
+
+          <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg border border-slate-300/50 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setTheme("light")}
@@ -219,8 +230,11 @@ export default function App() {
               <Monitor className="w-4 h-4" />
             </button>
           </div>
+        </div>
 
-          <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 p-3 rounded-xl text-blue-600 dark:text-blue-400 mt-2 sm:mt-0">
+        {/* Header */}
+        <div className="text-center flex flex-col items-center gap-2">
+          <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 p-3 rounded-xl text-blue-600 dark:text-blue-400">
             <Compass className="w-7 h-7" />
           </div>
           <div>
@@ -589,6 +603,41 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* Support / Donation Footer */}
+        <footer className="mt-2 pt-6 pb-6 border-t border-slate-200 dark:border-slate-800/80 flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-1.5 max-w-md">
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              このツールがモータースポーツ活動や走行データ解析のお役に立ちましたら、ぜひサポートをお願いいたします！
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              サーバー不要のオープンソースとして継続的に改善・保守を行っています。
+            </p>
+          </div>
+
+          <a
+            href="https://buymeacoffee.com/oud0n"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#FFDD00] hover:bg-[#ffe338] text-zinc-900 shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <Coffee className="w-4 h-4" />
+            <span>Buy Me a Coffee で作者をサポート</span>
+          </a>
+
+          <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500 pt-2 font-mono">
+            <span>© {new Date().getFullYear()} oud0n</span>
+            <span>·</span>
+            <a
+              href="https://github.com/oud0n/ds4_convert"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors underline underline-offset-2"
+            >
+              GitHub Repository
+            </a>
+          </div>
+        </footer>
 
       </main>
     </div>

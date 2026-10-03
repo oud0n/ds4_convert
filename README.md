@@ -1,5 +1,7 @@
 # DigSpice 4 Converter (ds4_convert)
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/oud0n)
+
 [日本語](#日本語) | [English](#english)
 
 ---
@@ -66,6 +68,11 @@ npm run dev
 npm run build
 ```
 
+### 開発をサポート (Support & Donation)
+本ツールがお役に立ちましたら、継続的な開発・保守のため **Buy Me a Coffee** にてサポート（寄付）していただけると大変励みになります！
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/oud0n)
+
 ---
 
 <a name="english"></a>
@@ -129,6 +136,11 @@ Open `http://localhost:3000` in your browser.
 ```bash
 npm run build
 ```
+
+### Support & Donation
+If you find this project useful for your motorsport telemetry and track data analysis, please consider supporting its ongoing development and maintenance!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/oud0n)
 
 ---
 
