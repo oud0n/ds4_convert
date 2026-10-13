@@ -4,8 +4,13 @@ import { ParsedGPSFile, GPSPoint, FileMetadata } from "../types";
 export const formatNmeaCoord = (val: number, isLat: boolean): { nmea: string; dir: string } => {
   const dir = isLat ? (val >= 0 ? "N" : "S") : (val >= 0 ? "E" : "W");
   const absVal = Math.abs(val);
-  const deg = Math.floor(absVal);
-  const min = (absVal - deg) * 60;
+  let deg = Math.floor(absVal);
+  let min = (absVal - deg) * 60;
+  // 丸めで 60.000000 分になる場合は度へ繰り上げる
+  if (Number(min.toFixed(6)) >= 60) {
+    deg += 1;
+    min = 0;
+  }
   const degStr = deg.toString().padStart(isLat ? 2 : 3, "0");
   const minStr = min.toFixed(6).padStart(9, "0");
   return { nmea: `${degStr}${minStr}`, dir };
@@ -83,8 +88,8 @@ export function adjustParsedFile(
   }
 
   const validTimes = shiftedPoints.map(p => p.time).filter((t): t is Date => t !== null);
-  const startTime = validTimes.length > 0 ? new Date(Math.min(...validTimes.map(t => t.getTime()))) : null;
-  const endTime = validTimes.length > 0 ? new Date(Math.max(...validTimes.map(t => t.getTime()))) : null;
+  const startTime = validTimes.length > 0 ? new Date(validTimes.reduce((m, t) => Math.min(m, t.getTime()), Infinity)) : null;
+  const endTime = validTimes.length > 0 ? new Date(validTimes.reduce((m, t) => Math.max(m, t.getTime()), -Infinity)) : null;
 
   const rawNmeaLines: string[] = [];
   shiftedPoints.forEach(p => {
@@ -263,6 +268,33 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
   const lines = content.split(/\r?\n/);
   const pointMap = new Map<string, Partial<GPSPoint>>();
   const rawNmeaLines: string[] = [];
+  // 車速・方位が RMC に記録されていた点 (記録された 0 を推定値で上書きしないため)
+  const recordedSpeed = new Set<Partial<GPSPoint>>();
+  const recordedHeading = new Set<Partial<GPSPoint>>();
+  // 時刻だけでは別の日の同時刻を区別できないので、日の通し番号をキーに含める。
+  // 時刻が半日以上戻ったとき、または RMC の日付が変わったときに次の日とみなす
+  let dayIndex = 0;
+  let lastSecOfDay: number | null = null;
+  let lastRmcDate = "";
+  let rolledSinceLastRmc = false;
+  const keyFor = (timeStr: string, dateStr?: string): string => {
+    const sec = parseInt(timeStr.substring(0, 2), 10) * 3600 + parseInt(timeStr.substring(2, 4), 10) * 60 + parseFloat(timeStr.substring(4));
+    if (dateStr && lastRmcDate && dateStr !== lastRmcDate) {
+      // 時刻の巻き戻りで既に日を進めていれば、日付の変化では重ねて進めない
+      if (!rolledSinceLastRmc) dayIndex++;
+    } else if (Number.isFinite(sec) && lastSecOfDay !== null && sec < lastSecOfDay - 43200) {
+      dayIndex++;
+      rolledSinceLastRmc = true;
+    }
+    if (dateStr) {
+      lastRmcDate = dateStr;
+      rolledSinceLastRmc = false;
+    }
+    if (Number.isFinite(sec)) lastSecOfDay = sec;
+    return `${dayIndex.toString().padStart(6, "0")}|${timeStr}`;
+  };
+  const dayOfKey = (key: string): number => parseInt(key.split("|")[0], 10);
+  const timeOfKey = (key: string): string => key.split("|")[1];
 
   for (let line of lines) {
     line = line.trim();
@@ -292,23 +324,39 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
     if (isGGA && parts.length >= 10) {
       const timeStr = parts[1];
       if (!timeStr) continue;
+      // 測位品質 0 (未測位) の行は採用しない
+      if (parts[6] === "0") continue;
+      const key = keyFor(timeStr);
 
       const lat = parseNmeaCoordinate(parts[2], parts[3]);
       const lon = parseNmeaCoordinate(parts[4], parts[5]);
       const sat = parseInt(parts[7], 10);
       const alt = parseFloat(parts[9]);
 
-      const existing = pointMap.get(timeStr) || {};
+      const existing = pointMap.get(key) || {};
       existing.rawGga = line;
       if (lat !== null) existing.latitude = lat;
       if (lon !== null) existing.longitude = lon;
       if (!isNaN(sat)) existing.satellites = sat;
       if (!isNaN(alt)) existing.altitude = alt;
 
-      pointMap.set(timeStr, existing);
+      pointMap.set(key, existing);
     } else if (isRMC && parts.length >= 10) {
       const timeStr = parts[1];
       if (!timeStr) continue;
+      // 状態 V (無効な測位) の行は採用しない
+      if (parts[2] === "V") continue;
+      const dayBefore = dayIndex;
+      const key = keyFor(timeStr, /^\d{6}$/.test(parts[9]) ? parts[9] : undefined);
+      // 同じ時刻の GGA が先に来ていて、この RMC で日付が変わったと分かった場合は、GGA 側の点をこちらへ移す
+      if (dayIndex !== dayBefore) {
+        const oldKey = `${dayBefore.toString().padStart(6, "0")}|${timeStr}`;
+        const stray = pointMap.get(oldKey);
+        if (stray && !stray.rawRmc) {
+          pointMap.delete(oldKey);
+          pointMap.set(key, stray);
+        }
+      }
 
       const lat = parseNmeaCoordinate(parts[3], parts[4]);
       const lon = parseNmeaCoordinate(parts[5], parts[6]);
@@ -316,15 +364,19 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
       const heading = parseFloat(parts[8]);
       const dateStr = parts[9];
 
-      const existing = pointMap.get(timeStr) || {};
+      const existing = pointMap.get(key) || {};
       existing.rawRmc = line;
       if (lat !== null) existing.latitude = lat;
       if (lon !== null) existing.longitude = lon;
       if (!isNaN(speedKnots)) {
         existing.speedKnots = speedKnots;
         existing.speedKmh = speedKnots * 1.852;
+        recordedSpeed.add(existing);
       }
-      if (!isNaN(heading)) existing.heading = heading;
+      if (!isNaN(heading)) {
+        existing.heading = heading;
+        recordedHeading.add(existing);
+      }
 
       // Parse full date-time
       const dt = parseUtcDateTime(timeStr, dateStr, name);
@@ -334,21 +386,25 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
       if (existing.altitude === undefined) existing.altitude = 0.0;
       if (existing.satellites === undefined) existing.satellites = 12;
 
-      pointMap.set(timeStr, existing);
+      pointMap.set(key, existing);
     }
   }
 
   // Convert map to sorted point list
   const points: GPSPoint[] = [];
-  const sortedTimes = Array.from(pointMap.keys()).sort();
+  const sortedKeys = Array.from(pointMap.keys()).sort();
+  // 推定で埋めてよい点 (RMC に車速・方位が無かった点)
+  const needsSpeed = new Set<GPSPoint>();
+  const needsHeading = new Set<GPSPoint>();
 
-  for (const timeStr of sortedTimes) {
-    const pt = pointMap.get(timeStr)!;
+  for (const key of sortedKeys) {
+    const pt = pointMap.get(key)!;
     
     // Fill in default Date if it wasn't parsed from RMC
     if (!pt.time) {
-      const dt = parseUtcDateTime(timeStr, undefined, name);
-      if (dt) pt.time = dt;
+      const dt = parseUtcDateTime(timeOfKey(key), undefined, name);
+      // 日付の無い行 (GGA のみ) は、日をまたいだ分だけ日付を進める
+      if (dt) pt.time = new Date(dt.getTime() + dayOfKey(key) * 86400000);
     }
 
     // Only keep points with valid coordinate locks
@@ -365,6 +421,9 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
         rawGga: pt.rawGga,
         rawRmc: pt.rawRmc
       });
+      const added = points[points.length - 1];
+      if (!recordedSpeed.has(pt)) needsSpeed.add(added);
+      if (!recordedHeading.has(pt)) needsHeading.add(added);
     }
   }
 
@@ -376,8 +435,8 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
       const curr = points[i];
 
       if (curr.time && prev.time && curr.latitude !== null && curr.longitude !== null && prev.latitude !== null && prev.longitude !== null) {
-        const hasRmcSpeed = curr.rawRmc && curr.speedKmh !== 0;
-        if (!hasRmcSpeed) {
+        // 車速が記録されていない点だけ、位置の差から推定する (記録された 0 km/h は停止として尊重する)
+        if (needsSpeed.has(curr)) {
           const dtSeconds = (curr.time.getTime() - prev.time.getTime()) / 1000;
           if (dtSeconds > 0) {
             const dist = calculateDistanceMeters(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
@@ -393,7 +452,9 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
               curr.speedKnots = prev.speedKnots;
             }
 
-            curr.heading = calculateBearingDegrees(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+            if (needsHeading.has(curr)) {
+              curr.heading = calculateBearingDegrees(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+            }
           }
         }
       }
@@ -418,8 +479,8 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
     // Filter out null times for sorting
     const validTimes = points.map(p => p.time).filter((t): t is Date => t !== null);
     if (validTimes.length > 0) {
-      startTime = new Date(Math.min(...validTimes.map(t => t.getTime())));
-      endTime = new Date(Math.max(...validTimes.map(t => t.getTime())));
+      startTime = new Date(validTimes.reduce((m, t) => Math.min(m, t.getTime()), Infinity));
+      endTime = new Date(validTimes.reduce((m, t) => Math.max(m, t.getTime()), -Infinity));
     }
 
     points.forEach(p => {
@@ -492,6 +553,8 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
     t: number; // Unix timestamp in seconds
     tp: number; // Unix timestamp in seconds with subseconds
     heading?: number;
+    alt?: number; // altitude in metres (when recorded)
+    sat?: number; // satellites in use (when recorded)
   }
 
   const rawPoints: RawPoint[] = [];
@@ -536,6 +599,56 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
       c += 26;
     }
   } else {
+    // DigSpice IV の 36 バイトレコード (実走ログで確認した構成):
+    //   +0  uint32  UTC 時刻 (秒)        +22 float32 標高 (m)
+    //   +4  uint16  測位状態 (2D=2, 3D=3) +26 float32 車速 (km/h)
+    //   +6  float64 緯度                  +30 uint8 x2 衛星数
+    //   +14 float64 経度                  +32 uint16  ミリ秒
+    //   +34 '*'  +35 先頭 34 バイトの XOR
+    // 方位は記録されていないので、後段で前後の位置から求める。
+    // セクタ先頭の管理領域や設定タグはチェックサムが合わないので、1 バイトずつ送って読み飛ばす
+    let q = 0;
+    // チェックサムの合うレコードを 1 件でも見つけたか (見つけたら従来レイアウトでは読まない)
+    let checksummedFormat = false;
+    while (q + 36 <= bytes.length) {
+      if (bytes[q + 34] === 0x2a) {
+        let x = 0;
+        for (let k = 0; k < 34; k++) x ^= bytes[q + k];
+        if (x === bytes[q + 35]) {
+          checksummedFormat = true;
+          const u_t = view.getUint32(q, true);
+          const fix = view.getUint16(q + 4, true);
+          const lat = view.getFloat64(q + 6, true);
+          const lon = view.getFloat64(q + 14, true);
+          const alt = view.getFloat32(q + 22, true);
+          const spd = view.getFloat32(q + 26, true);
+          const sat = bytes[q + 31];
+          const ms = view.getUint16(q + 32, true);
+          if (
+            (fix === 2 || fix === 3) &&
+            Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0) &&
+            u_t > 946684800 && u_t < 2524608000
+          ) {
+            rawPoints.push({
+              lat,
+              lon,
+              v: !isNaN(spd) && spd >= 0 && spd < 450 ? spd : 0,
+              t: u_t,
+              tp: u_t + (ms < 1000 ? ms / 1000 : 0),
+              alt: !isNaN(alt) && alt > -500 && alt < 10000 ? alt : 0,
+              sat
+            });
+          }
+          q += 36;
+          continue;
+        }
+      }
+      q += 1;
+    }
+
+    // チェックサム付きのレコードが 1 件も無いファイルだけ、従来の推定レイアウトで読む。
+    // チェックサム付きの形式と分かったファイルでは、検証に通らなかったレコードを拾い直さない
+    if (!checksummedFormat) {
     // Elegant, multi-layout scanning with auto-alignment for robust .bnx4 / .binx decoding
     interface Layout {
       name: string;
@@ -569,10 +682,10 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
             const u_t = v.getUint32(z + 0, true);
             const lat = v.getFloat64(z + 6, true);
             const lon = v.getFloat64(z + 14, true);
-            const heading = v.getFloat32(z + 22, true);
+            // +22 は標高 (方位ではない)。方位は後段で位置から求める
             const speedKmh = v.getFloat32(z + 26, true);
             const ms = v.getUint16(z + 32, true);
-            return { lat, lon, speedKmh, heading, ms, u_t };
+            return { lat, lon, speedKmh, heading: NaN, ms, u_t };
           } catch {
             return null;
           }
@@ -630,6 +743,11 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
       for (const layout of layouts) {
         if (z + layout.recordSize > bytes.length) continue;
 
+        // +34 が '*' のレコードはチェックサム付きの形式。ここに来るのは検証に通らなかったもの (破損) なので拾わない
+        if (layout.recordSize === 36 && bytes[z + 34] === 0x2a) continue;
+        // 先頭のレイアウトは、同じレコードを 6 バイトずれた位置から読んだ形にも一致する (その場合 '*' は +28 に来る)
+        if (layout === layouts[0] && bytes[z + 28] === 0x2a) continue;
+
         const rec = layout.parse(view, z);
         if (rec) {
           const { lat, lon, speedKmh, heading, ms, u_t } = rec;
@@ -666,6 +784,7 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
         z += 1;
       }
     }
+    }
   }
 
   // Post-process rawPoints to standard GPSPoint format
@@ -675,27 +794,29 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
 
     // Calculate heading (進行方向) sequentially from GPS coordinates if binary heading is missing or 0
     let heading = rpt.heading ?? 0;
-    if (i > 0) {
-      const prev = rawPoints[i - 1];
-      const dist = calculateDistanceMeters(prev.lat, prev.lon, rpt.lat, rpt.lon);
-      if (dist > 0.05) {
-        const calcHeading = calculateBearingDegrees(prev.lat, prev.lon, rpt.lat, rpt.lon);
-        if (!rpt.heading || rpt.heading === 0) {
-          heading = calcHeading;
-        }
-      } else {
-        heading = points[i - 1]?.heading ?? heading;
-      }
-    } else if (rawPoints.length > 1) {
-      const next = rawPoints[1];
-      const dist = calculateDistanceMeters(rpt.lat, rpt.lon, next.lat, next.lon);
-      if (dist > 0.05 && (!rpt.heading || rpt.heading === 0)) {
+    if (!rpt.heading) {
+      // 連続した記録 (2 秒以内) で、走行中 (1 km/h 以上) に実際に動いた区間だけを方位の計算に使う。
+      // 停止中の位置の揺れや、別セッションとの間の移動を方位にしない
+      const usable = (a: RawPoint, b: RawPoint): boolean => {
+        const dt = b.tp - a.tp;
+        return dt > 0 && dt <= 2 && b.v >= 1 && calculateDistanceMeters(a.lat, a.lon, b.lat, b.lon) > 0.05;
+      };
+      const prev = i > 0 ? rawPoints[i - 1] : undefined;
+      const next = i + 1 < rawPoints.length ? rawPoints[i + 1] : undefined;
+      if (prev && usable(prev, rpt)) {
+        heading = calculateBearingDegrees(prev.lat, prev.lon, rpt.lat, rpt.lon);
+      } else if (next && usable(rpt, next) && rpt.v >= 1) {
+        // セッションの先頭など、前の点が使えないときは次の点への向き
         heading = calculateBearingDegrees(rpt.lat, rpt.lon, next.lat, next.lon);
+      } else if (prev && rpt.tp - prev.tp > 0 && rpt.tp - prev.tp <= 2) {
+        // 停止中は直前の方位を保つ
+        heading = points[i - 1]?.heading ?? 0;
       }
     }
 
-    const satellites = 12;
-    const altitude = 0.0;
+    // 記録されていない形式 (.bon / .bon4 など) では従来どおりの既定値
+    const satellites = rpt.sat ?? 12;
+    const altitude = rpt.alt ?? 0.0;
 
     // NMEA formatting
     const hh = dt.getUTCHours().toString().padStart(2, "0");
@@ -747,8 +868,8 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
   if (points.length > 0) {
     const validTimes = points.map(p => p.time).filter((t): t is Date => t !== null);
     if (validTimes.length > 0) {
-      startTime = new Date(Math.min(...validTimes.map(t => t.getTime())));
-      endTime = new Date(Math.max(...validTimes.map(t => t.getTime())));
+      startTime = new Date(validTimes.reduce((m, t) => Math.min(m, t.getTime()), Infinity));
+      endTime = new Date(validTimes.reduce((m, t) => Math.max(m, t.getTime()), -Infinity));
     }
 
     points.forEach(p => {

@@ -73,8 +73,9 @@ export default function App() {
     const origStartMs = file.stats.startTime.getTime();
     const shiftedStartMs = origStartMs + timezoneOffset * 3600 * 1000;
     
-    const trimStartMs = shiftedStartMs + trimStartSec * 1000;
-    const trimEndMs = shiftedStartMs + trimEndSec * 1000;
+    // 端まで選ばれているときは切り出さない (秒に丸めた長さで切ると、末尾の 1 秒未満の点が落ちるため)
+    const trimStartMs = trimStartSec <= 0 ? null : shiftedStartMs + trimStartSec * 1000;
+    const trimEndMs = trimEndSec >= file.stats.durationSeconds ? null : shiftedStartMs + trimEndSec * 1000;
     return { trimStartMs, trimEndMs };
   }, [file, timezoneOffset, trimStartSec, trimEndSec]);
 

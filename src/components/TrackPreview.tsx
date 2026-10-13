@@ -174,10 +174,11 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
 
     const xs = relativePoints.map(p => p.x);
     const ys = relativePoints.map(p => p.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
+    // 点数の多いログでも落ちないよう、配列を引数に展開せずに求める
+    const minX = xs.reduce((m, v) => Math.min(m, v), Infinity);
+    const maxX = xs.reduce((m, v) => Math.max(m, v), -Infinity);
+    const minY = ys.reduce((m, v) => Math.min(m, v), Infinity);
+    const maxY = ys.reduce((m, v) => Math.max(m, v), -Infinity);
 
     const spanX = maxX - minX;
     const spanY = maxY - minY;

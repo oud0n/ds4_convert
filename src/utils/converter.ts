@@ -27,12 +27,15 @@ export function convertToGPX(file: ParsedGPSFile): string {
     })
     .join("\n");
 
-  const nameWithoutExtension = file.metadata.name.replace(/\.[^/.]+$/, "");
+  // ファイル名に & や < が含まれても XML が壊れないようにする
+  const escapeXml = (v: string): string =>
+    v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const nameWithoutExtension = escapeXml(file.metadata.name.replace(/\.[^/.]+$/, ""));
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="DigSpice GPS Converter" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
-    <name>${file.metadata.name}</name>
+    <name>${escapeXml(file.metadata.name)}</name>
     <desc>Converted from DigSpice GPS log file</desc>
     <time>${new Date().toISOString()}</time>
   </metadata>
