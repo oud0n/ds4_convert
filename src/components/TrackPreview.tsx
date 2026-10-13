@@ -10,6 +10,7 @@ import {
   ReferenceLine,
   ReferenceArea
 } from "recharts";
+import { sampleIndices, samplePoints } from "../utils/sampling";
 import { GPSPoint } from "../types";
 import { Gauge, Compass, Activity, Clock, Flag, Scissors, RotateCcw } from "lucide-react";
 
@@ -158,7 +159,8 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
     const latRad = (centerLat * Math.PI) / 180;
     const lonScale = Math.cos(latRad);
 
-    const relativePoints = validPoints.map(p => {
+    const relativePoints = sampleIndices(validPoints.length, 4000).map(index => {
+      const p = validPoints[index];
       const ptTimeMs = p.time ? p.time.getTime() : baseTimeMs;
       const sec = baseTimeMs ? Math.round((ptTimeMs - baseTimeMs) / 1000) : 0;
       return {
@@ -168,7 +170,8 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
         heading: p.heading || 0,
         time: p.time,
         alt: p.altitude || 0,
-        sec
+        sec,
+        index
       };
     });
 
@@ -204,7 +207,8 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
       time: p.time,
       alt: p.alt,
       sec: p.sec,
-      index: idx
+      index: p.index,
+      displayIndex: idx
     }));
   }, [validPoints, baseTimeMs]);
 
@@ -218,11 +222,9 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
   const chartData = useMemo(() => {
     if (projectedData.length === 0) return [];
     
-    const step = Math.max(1, Math.floor(projectedData.length / 500));
     const result = [];
-    
-    for (let i = 0; i < projectedData.length; i += step) {
-      const p = projectedData[i];
+
+    for (const p of samplePoints(projectedData, 500)) {
       let timeStr = "";
       if (p.time) {
         const d = new Date(p.time);
@@ -234,7 +236,7 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
         sec: p.sec,
         name: timeStr,
         speed: parseFloat(p.speed.toFixed(1)),
-        originalIndex: p.index,
+        displayIndex: p.displayIndex,
         heading: p.heading
       });
     }
@@ -480,7 +482,7 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
                 if (state && state.activeTooltipIndex !== undefined) {
                   const dataPoint = chartData[state.activeTooltipIndex];
                   if (dataPoint) {
-                    setHoveredIndex(dataPoint.originalIndex);
+                    setHoveredIndex(dataPoint.displayIndex);
                   }
                 }
               }}

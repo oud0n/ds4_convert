@@ -20,7 +20,7 @@ import { motion } from "motion/react";
 import { UploadZone } from "./components/UploadZone";
 import { TrackPreview } from "./components/TrackPreview";
 import { ParsedGPSFile } from "./types";
-import { adjustParsedFile } from "./utils/parser";
+import { adjustParsedFile, trimAdjustedFile } from "./utils/parser";
 import { convertToGPX, convertToCSV, convertToNMEA, convertToTXT, convertToHTMLMap } from "./utils/converter";
 
 export default function App() {
@@ -87,9 +87,10 @@ export default function App() {
 
   // Dynamically calculate the timezone-shifted & talker ID-adapted file with trim applied
   const adjustedFile = React.useMemo(() => {
-    if (!file) return null;
-    return adjustParsedFile(file, timezoneOffset, talkerId, trimStartMs, trimEndMs);
-  }, [file, timezoneOffset, talkerId, trimStartMs, trimEndMs]);
+    if (!fullAdjustedFile) return null;
+    if (trimStartMs == null && trimEndMs == null) return fullAdjustedFile;
+    return trimAdjustedFile(fullAdjustedFile, trimStartMs, trimEndMs);
+  }, [fullAdjustedFile, trimStartMs, trimEndMs]);
 
   const handleTrimChange = (startSec: number, endSec: number) => {
     setTrimStartSec(startSec);

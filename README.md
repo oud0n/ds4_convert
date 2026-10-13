@@ -10,6 +10,8 @@
 ## 日本語
 
 ### 概要
+> 解析機能を備えた統合版 **DS Universal Suite** のブラウザ版でも、同じ変換が行えます: <https://oud0n.github.io/ds_universal/#convert>
+
 **DigSpice 4 Converter (ds4_convert)** は、デジスパイス4 (DigSpice 4) などのモータースポーツ向けGPSデータロガーのログファイル（`.bnx4`, `.bon4`, `.binx`, `.bon`, `.txt`, `.nmea`）を、標準的な **NMEA-0183 形式** をはじめとする各種データフォーマットに変換・解析・可視化できるWebアプリケーションです。
 
 デジスパイスアプリのフォルダ内に記録される `.bon4` ファイル等を本アプリで変換し、**RaceChrono** などのモータースポーツ用解析アプリにインポートすることで、スマートフォン上で簡単にサーキットの**走行ライン解析やラップタイム比較**を行うことができます。
@@ -20,7 +22,7 @@
 - **デジスパイス4（DigSpice 4）データ対応**:
   - デジスパイスアプリフォルダ内の `.bon4` ファイルやバイナリログ（`.bnx4`, `.bon4`, `.binx`, `.bon`）、各種NMEAテキストログを自動認識して高精度に解析。
 - **RaceChrono等の解析アプリ連携 (NMEA / GPX / CSV)**:
-  - **NMEA-0183 (`.nmea`)**: 標準的な GGA / RMC センテンスを生成。トークンID (`$GP` / `$GN`) の切り替えに対応し、RaceChrono等でそのまま走行ライン解析が可能。
+  - **NMEA-0183 (`.nmea`)**: 各点について GGA、RMC の順に生成し、標高（小数1桁）と衛星数（2桁ゼロ埋め）も出力。トークンID (`$GP` / `$GN`) の切り替えに対応し、RaceChrono等でそのまま走行ライン解析が可能。
   - **GPX (`.gpx`)**: 各種GPS解析アプリやサードパーティツール向けのトラック形式。
   - **CSV (`.csv`)**: ExcelやPython等のデータ分析に適した詳細テーブル形式。
   - **TXT (`.txt`)**: タイムスタンプ・位置・速度・方位のプレーンテキストデータ。
@@ -79,6 +81,8 @@ npm run build
 ## English
 
 ### Overview
+> The same conversion is also available in the browser version of **DS Universal Suite**, which adds telemetry analysis: <https://oud0n.github.io/ds_universal/#convert>
+
 **DigSpice 4 Converter (ds4_convert)** is a modern Web application designed to convert, parse, and visualize GPS log files from **DigSpice 4** motorsport data loggers (`.bnx4`, `.bon4`, `.binx`, `.bon`, `.txt`, `.nmea`) into standard **NMEA-0183 format** and other compatible formats.
 
 By converting `.bon4` files recorded in the DigSpice app folder and importing them into mobile lap timer and analysis apps such as **RaceChrono**, drivers can easily analyze driving lines and compare telemetry directly on their smartphones.
@@ -89,7 +93,7 @@ It also features interactive track previews (maps and speed graphs), time-range 
 - **DigSpice 4 Data Support**:
   - Automatically parses `.bon4` files from the DigSpice app folder, binary log files (`.bnx4`, `.bon4`, `.binx`, `.bon`), and NMEA text logs.
 - **Seamless Integration with RaceChrono & Telemetry Tools**:
-  - **NMEA-0183 (`.nmea`)**: Standardized GGA and RMC sentences with selectable Talker IDs (`$GP` / `$GN`), fully compatible with RaceChrono for driving line analysis on smartphones.
+  - **NMEA-0183 (`.nmea`)**: GGA followed by RMC for each point, including altitude (one decimal place) and satellite count (two digits, zero-padded), with selectable Talker IDs (`$GP` / `$GN`), fully compatible with RaceChrono for driving line analysis on smartphones.
   - **GPX (`.gpx`)**: Standard GPS Exchange Format for telemetry and mapping software.
   - **CSV (`.csv`)**: Structured tabular data ready for Excel and data analysis workflows.
   - **TXT (`.txt`)**: Space-separated timestamped coordinate and telemetry text output.

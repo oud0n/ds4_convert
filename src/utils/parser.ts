@@ -33,7 +33,7 @@ export function adjustParsedFile(
   trimStartMs?: number | null,
   trimEndMs?: number | null
 ): ParsedGPSFile {
-  let shiftedPoints = file.points.map(pt => {
+  const shiftedPoints = file.points.map(pt => {
     if (!pt.time) return pt;
     
     // Shift the timestamp by selected offset
@@ -76,6 +76,17 @@ export function adjustParsedFile(
     };
   });
 
+  return trimAdjustedFile({ ...file, points: shiftedPoints }, trimStartMs, trimEndMs);
+}
+
+// Reuse generated sentences when only the trim range changes.
+export function trimAdjustedFile(
+  file: ParsedGPSFile,
+  trimStartMs?: number | null,
+  trimEndMs?: number | null
+): ParsedGPSFile {
+  let shiftedPoints = file.points;
+
   // Filter points by trimStartMs and trimEndMs (applied on the shifted time scale)
   if (trimStartMs != null || trimEndMs != null) {
     shiftedPoints = shiftedPoints.filter(p => {
@@ -93,8 +104,8 @@ export function adjustParsedFile(
 
   const rawNmeaLines: string[] = [];
   shiftedPoints.forEach(p => {
-    // Official DigSpice converter tool uses RMC only.
-    // Exporting only RMC sentences ensures perfect compatibility with the official app.
+    // Preserve altitude and satellite count with GGA before each RMC.
+    if (p.rawGga) rawNmeaLines.push(p.rawGga);
     if (p.rawRmc) rawNmeaLines.push(p.rawRmc);
   });
 
@@ -842,7 +853,8 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
     const rmcNoChecksum = `GPRMC,${timeStr},A,${latNmea},${latDir},${lonNmea},${lonDir},${speedKnots.toFixed(1)},${heading.toFixed(2)},${dateStr},,,A`;
     const rmcSentence = createNmeaSentence(rmcNoChecksum);
 
-    rawNmeaLines.push(rmcSentence);
+    // Export altitude and satellites alongside position, speed and date.
+    rawNmeaLines.push(ggaSentence, rmcSentence);
 
     points.push({
       time: dt,

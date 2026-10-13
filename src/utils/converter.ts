@@ -1,3 +1,4 @@
+import { samplePoints } from "./sampling";
 import { ParsedGPSFile } from "../types";
 
 // Convert parsed GPS points to standard GPX XML format
@@ -108,22 +109,17 @@ export function convertToTXT(file: ParsedGPSFile): string {
   return lines.join("\n") + "\n";
 }
 
-// Convert parsed GPS points to a self-contained Leaflet HTML map matching folium's output
+// Export a Leaflet HTML map with a sampled trace and sparse telemetry markers
 export function convertToHTMLMap(file: ParsedGPSFile): string {
-  const coordinatesData = file.points
-    .filter(pt => pt.latitude !== null && pt.longitude !== null)
-    .map(pt => {
-      const timeStr = pt.time ? pt.time.toISOString() : "";
-      return [
-        pt.latitude,
-        pt.longitude,
-        pt.speedKmh || 0,
-        pt.heading || 0,
-        timeStr
-      ];
-    });
-
+  const validPoints = file.points.filter(pt => pt.latitude !== null && pt.longitude !== null);
+  const coordinatesData = samplePoints(validPoints, 20000)
+    .map(pt => [pt.latitude, pt.longitude]);
+  const markersData = samplePoints(validPoints, 300).map(pt => [
+    pt.latitude, pt.longitude, pt.speedKmh || 0, pt.heading || 0,
+    pt.time ? pt.time.toISOString() : ""
+  ]);
   const coordinatesJson = JSON.stringify(coordinatesData);
+  const markersJson = JSON.stringify(markersData);
   const maxSpeedStr = file.stats.maxSpeedKmh.toFixed(1);
 
   return `<!DOCTYPE html>
@@ -188,11 +184,12 @@ export function convertToHTMLMap(file: ParsedGPSFile): string {
     <div class="info-panel">
         <div class="info-title">Race Track Map</div>
         <div class="info-detail">File: ${file.metadata.name}</div>
-        <div class="info-detail">Points: ${coordinatesData.length.toLocaleString()}</div>
+        <div class="info-detail">Points: ${validPoints.length.toLocaleString()}</div>
         <div class="info-detail">Max Speed: ${maxSpeedStr} km/h</div>
     </div>
     <script>
         const coordinates = ${coordinatesJson};
+        const markers = ${markersJson};
         
         if (coordinates.length > 0) {
             // Find coordinates centered on 35.3 if any exist (to match python script logic for fuji / etc)
@@ -212,8 +209,8 @@ export function convertToHTMLMap(file: ParsedGPSFile): string {
                 maxZoom: 20
             }).addTo(map);
             
-            // Render circle markers with white borders and blue fills exactly as requested
-            coordinates.forEach(coord => {
+            // Sparse telemetry markers include both endpoints.
+            markers.forEach((coord, index) => {
                 const lat = coord[0];
                 const lon = coord[1];
                 const speed = coord[2];
@@ -233,11 +230,11 @@ export function convertToHTMLMap(file: ParsedGPSFile): string {
                 }
 
                 L.circleMarker([lat, lon], {
-                    radius: 3.5,
+                    radius: index === 0 || index === markers.length - 1 ? 6 : 3.5,
                     color: "#ffffff",
                     weight: 0.5,
                     fill: true,
-                    fillColor: "#3b82f6",
+                    fillColor: index === 0 ? "#10b981" : index === markers.length - 1 ? "#ef4444" : "#3b82f6",
                     fillOpacity: 0.85
                 })
                 .bindTooltip(
