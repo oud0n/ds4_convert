@@ -598,6 +598,8 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
         const S = view.getUint8(c + 23);
         const _sec = view.getUint8(c + 24);
         const y_ms = view.getUint8(c + 25);
+        // +12 の int32 は標高 (0.1 m 単位)。.bon4 の実ログで確認。.bon は未確認のため読まない
+        const rawAlt = ext === "bon4" ? view.getInt32(c + 12, true) / 10 : NaN;
 
         const speedKmh = (f / 100) * 3.6;
         const lat = p / 1e7;
@@ -613,7 +615,8 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
             lon,
             v: speedKmh,
             t: Math.floor(k),
-            tp: k
+            tp: k,
+            alt: rawAlt > -500 && rawAlt < 10000 ? rawAlt : undefined
           });
         }
       } catch (e) {
