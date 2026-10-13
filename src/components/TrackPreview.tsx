@@ -138,7 +138,7 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
   };
 
   // Compute bounds and project coordinates to SVG space
-  const projectedData = useMemo(() => {
+  const allProjectedData = useMemo(() => {
     if (validPoints.length === 0) return [];
 
     let minLat = Infinity;
@@ -159,8 +159,7 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
     const latRad = (centerLat * Math.PI) / 180;
     const lonScale = Math.cos(latRad);
 
-    const relativePoints = sampleIndices(validPoints.length, 4000).map(index => {
-      const p = validPoints[index];
+    const relativePoints = validPoints.map((p, index) => {
       const ptTimeMs = p.time ? p.time.getTime() : baseTimeMs;
       const sec = baseTimeMs ? Math.round((ptTimeMs - baseTimeMs) / 1000) : 0;
       return {
@@ -212,11 +211,38 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
     }));
   }, [validPoints, baseTimeMs]);
 
-  // Trimmed points subset for map highlighting
+  const projectedData = useMemo(() => {
+    return samplePoints(allProjectedData, 4000).map((p, displayIndex) => ({ ...p, displayIndex }));
+  }, [allProjectedData]);
+
+  // 時刻の索引はログ変更時だけ作り、トリム操作では区間を二分探索する
+  const timedPoints = useMemo(() => {
+    return allProjectedData.map((p, index) => ({
+      index, timeMs: p.time?.getTime() ?? baseTimeMs
+    })).sort((a, b) => a.timeMs - b.timeMs || a.index - b.index);
+  }, [allProjectedData, baseTimeMs]);
+
   const trimmedProjectedData = useMemo(() => {
-    const filtered = projectedData.filter(p => p.sec >= currentStartSec && p.sec <= currentEndSec);
-    return filtered.length > 0 ? filtered : projectedData;
-  }, [projectedData, currentStartSec, currentEndSec]);
+    const startMs = baseTimeMs + currentStartSec * 1000;
+    const endMs = baseTimeMs + currentEndSec * 1000;
+    const bound = (timeMs: number, inclusive: boolean): number => {
+      let low = 0;
+      let high = timedPoints.length;
+      while (low < high) {
+        const mid = Math.floor((low + high) / 2);
+        if (timedPoints[mid].timeMs < timeMs || (inclusive && timedPoints[mid].timeMs === timeMs)) {
+          low = mid + 1;
+        } else {
+          high = mid;
+        }
+      }
+      return low;
+    };
+    const start = bound(startMs, false);
+    const end = bound(endMs, true);
+    return sampleIndices(Math.max(0, end - start), 4000)
+      .map(index => allProjectedData[timedPoints[start + index].index]);
+  }, [allProjectedData, timedPoints, baseTimeMs, currentStartSec, currentEndSec]);
 
   // Prepare data for Recharts AreaChart
   const chartData = useMemo(() => {
@@ -332,7 +358,7 @@ export const TrackPreview: React.FC<TrackPreviewProps> = ({
               )}
 
               {/* Trimmed End marker indicator */}
-              {trimmedProjectedData.length > 1 && (
+              {trimmedProjectedData.length > 0 && (
                 <g transform={`translate(${trimmedProjectedData[trimmedProjectedData.length - 1].x}, ${trimmedProjectedData[trimmedProjectedData.length - 1].y})`}>
                   <circle r="6" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
                 </g>

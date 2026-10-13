@@ -57,10 +57,17 @@ export function adjustParsedFile(
 
     const speedKnots = (pt.speedKmh ?? 0) / 1.852;
     const heading = pt.heading ?? 0;
-    const satellites = pt.satellites ?? 12;
-    const altitude = pt.altitude ?? 0.0;
+    const satellites = pt.satellites?.toString().padStart(2, "0") ?? "";
+    const altitude = pt.altitude?.toFixed(1) ?? "";
 
-    const ggaNoChecksum = `${talkerId}GGA,${timeStr},${latNmea},${latDir},${lonNmea},${lonDir},1,${satellites.toString().padStart(2, "0")},0.9,${altitude.toFixed(1)},M,,M,,`;
+    let ggaNoChecksum = `${talkerId}GGA,${timeStr},${latNmea},${latDir},${lonNmea},${lonDir},${pt.fixQuality ?? 1},${satellites},${pt.hdop ?? ""},${altitude},M,${pt.geoidHeight ?? ""},M,,`;
+    if (pt.rawGga) {
+      // 元の GGA は時刻と Talker ID だけを変更する
+      const fields = pt.rawGga.split("*")[0].slice(1).split(",");
+      fields[0] = `${talkerId}GGA`;
+      fields[1] = timeStr;
+      ggaNoChecksum = fields.join(",");
+    }
     const ggaSentence = createNmeaSentence(ggaNoChecksum);
 
     // Format RMC according to standard NMEA-0183 spec:
@@ -343,6 +350,9 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
       const lon = parseNmeaCoordinate(parts[4], parts[5]);
       const sat = parseInt(parts[7], 10);
       const alt = parseFloat(parts[9]);
+      const quality = parseInt(parts[6], 10);
+      const hdop = parseFloat(parts[8]);
+      const geoid = parseFloat(parts[11]);
 
       const existing = pointMap.get(key) || {};
       existing.rawGga = line;
@@ -350,6 +360,9 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
       if (lon !== null) existing.longitude = lon;
       if (!isNaN(sat)) existing.satellites = sat;
       if (!isNaN(alt)) existing.altitude = alt;
+      existing.fixQuality = !isNaN(quality) ? quality : null;
+      existing.hdop = !isNaN(hdop) ? hdop : null;
+      existing.geoidHeight = !isNaN(geoid) ? geoid : null;
 
       pointMap.set(key, existing);
     } else if (isRMC && parts.length >= 10) {
@@ -393,10 +406,6 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
       const dt = parseUtcDateTime(timeStr, dateStr, name);
       if (dt) existing.time = dt;
 
-      // Provide default altitude and satellites if they aren't filled by GGA (since DigSpice official tools export RMC-only)
-      if (existing.altitude === undefined) existing.altitude = 0.0;
-      if (existing.satellites === undefined) existing.satellites = 12;
-
       pointMap.set(key, existing);
     }
   }
@@ -429,6 +438,9 @@ export function parseNmeaLog(name: string, content: string): ParsedGPSFile {
         speedKmh: pt.speedKmh ?? 0,
         heading: pt.heading ?? 0,
         satellites: pt.satellites ?? null,
+        fixQuality: pt.fixQuality ?? null,
+        hdop: pt.hdop ?? null,
+        geoidHeight: pt.geoidHeight ?? null,
         rawGga: pt.rawGga,
         rawRmc: pt.rawRmc
       });
@@ -646,7 +658,7 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
               v: !isNaN(spd) && spd >= 0 && spd < 450 ? spd : 0,
               t: u_t,
               tp: u_t + (ms < 1000 ? ms / 1000 : 0),
-              alt: !isNaN(alt) && alt > -500 && alt < 10000 ? alt : 0,
+              alt: !isNaN(alt) && alt > -500 && alt < 10000 ? alt : undefined,
               sat
             });
           }
@@ -825,9 +837,8 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
       }
     }
 
-    // 記録されていない形式 (.bon / .bon4 など) では従来どおりの既定値
-    const satellites = rpt.sat ?? 12;
-    const altitude = rpt.alt ?? 0.0;
+    const satellites = rpt.sat ?? null;
+    const altitude = rpt.alt ?? null;
 
     // NMEA formatting
     const hh = dt.getUTCHours().toString().padStart(2, "0");
@@ -846,7 +857,7 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
 
     const speedKnots = rpt.v / 1.852;
 
-    const ggaNoChecksum = `GPGGA,${timeStr},${latNmea},${latDir},${lonNmea},${lonDir},1,${satellites.toString().padStart(2, "0")},0.9,${altitude.toFixed(1)},M,,M,,`;
+    const ggaNoChecksum = `GPGGA,${timeStr},${latNmea},${latDir},${lonNmea},${lonDir},1,${satellites?.toString().padStart(2, "0") ?? ""},,${altitude?.toFixed(1) ?? ""},M,,M,,`;
     const ggaSentence = createNmeaSentence(ggaNoChecksum);
 
     // Standard NMEA-0183 GPRMC sentence
@@ -865,6 +876,9 @@ export function parseBnx4OrBon4Log(name: string, bytes: Uint8Array): ParsedGPSFi
       speedKmh: rpt.v,
       heading: heading,
       satellites: satellites,
+      fixQuality: null,
+      hdop: null,
+      geoidHeight: null,
       rawGga: ggaSentence,
       rawRmc: rmcSentence
     });

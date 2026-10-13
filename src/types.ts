@@ -14,6 +14,9 @@ export interface GPSPoint {
   speedKmh: number | null;  // speed in km/h
   heading: number | null;   // degrees
   satellites: number | null;
+  fixQuality: number | null;
+  hdop: number | null;
+  geoidHeight: number | null;
   rawGga?: string;
   rawRmc?: string;
 }

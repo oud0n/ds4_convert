@@ -9,9 +9,7 @@ export function convertToGPX(file: ParsedGPSFile): string {
       const lon = pt.longitude !== null ? pt.longitude.toFixed(6) : "0.000000";
       
       let elements = "";
-      if (pt.altitude !== null) {
-        elements += `\n        <ele>${pt.altitude.toFixed(1)}</ele>`;
-      }
+      elements += `\n        <ele>${(pt.altitude ?? 0).toFixed(1)}</ele>`;
       if (pt.time !== null) {
         elements += `\n        <time>${pt.time.toISOString()}</time>`;
       }
@@ -67,7 +65,7 @@ export function convertToCSV(file: ParsedGPSFile): string {
     pt.time ? pt.time.toISOString() : "",
     pt.latitude !== null ? pt.latitude.toFixed(6) : "",
     pt.longitude !== null ? pt.longitude.toFixed(6) : "",
-    pt.altitude !== null ? pt.altitude.toFixed(1) : "",
+    (pt.altitude ?? 0).toFixed(1),
     pt.speedKmh !== null ? pt.speedKmh.toFixed(2) : "",
     pt.speedKnots !== null ? pt.speedKnots.toFixed(2) : "",
     pt.heading !== null ? pt.heading.toFixed(1) : "",
@@ -121,11 +119,14 @@ export function convertToHTMLMap(file: ParsedGPSFile): string {
   const coordinatesJson = JSON.stringify(coordinatesData);
   const markersJson = JSON.stringify(markersData);
   const maxSpeedStr = file.stats.maxSpeedKmh.toFixed(1);
+  const escapedName = file.metadata.name.replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
   return `<!DOCTYPE html>
 <html>
 <head>
-    <title>Race Track Map - ${file.metadata.name}</title>
+    <title>Race Track Map - ${escapedName}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -183,7 +184,7 @@ export function convertToHTMLMap(file: ParsedGPSFile): string {
     <div id="map"></div>
     <div class="info-panel">
         <div class="info-title">Race Track Map</div>
-        <div class="info-detail">File: ${file.metadata.name}</div>
+        <div class="info-detail">File: ${escapedName}</div>
         <div class="info-detail">Points: ${validPoints.length.toLocaleString()}</div>
         <div class="info-detail">Max Speed: ${maxSpeedStr} km/h</div>
     </div>

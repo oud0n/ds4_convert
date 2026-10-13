@@ -22,17 +22,17 @@
 - **デジスパイス4（DigSpice 4）データ対応**:
   - デジスパイスアプリフォルダ内の `.bon4` ファイルやバイナリログ（`.bnx4`, `.bon4`, `.binx`, `.bon`）、各種NMEAテキストログを自動認識して高精度に解析。
 - **RaceChrono等の解析アプリ連携 (NMEA / GPX / CSV)**:
-  - **NMEA-0183 (`.nmea`)**: 各点について GGA、RMC の順に生成し、標高（小数1桁）と衛星数（2桁ゼロ埋め）も出力。トークンID (`$GP` / `$GN`) の切り替えに対応し、RaceChrono等でそのまま走行ライン解析が可能。
+  - **NMEA-0183 (`.nmea`)**: 各点について GGA、RMC の順に生成し、入力の GGA は時刻と Talker ID 以外のフィールドを保持。GGA を生成する場合、入力に無い標高・衛星数・HDOP・ジオイド高などは空欄（測位品質は 1）。バイナリ入力の実測標高・衛星数は保持。トークンID (`$GP` / `$GN`) の切り替えに対応し、RaceChrono等でそのまま走行ライン解析が可能。
   - **GPX (`.gpx`)**: 各種GPS解析アプリやサードパーティツール向けのトラック形式。
   - **CSV (`.csv`)**: ExcelやPython等のデータ分析に適した詳細テーブル形式。
   - **TXT (`.txt`)**: タイムスタンプ・位置・速度・方位のプレーンテキストデータ。
-  - **HTML Map (`.html`)**: インタラクティブな地図（Leaflet）を組み込んだ単体スタンドアロンHTMLファイル。
+  - **HTML Map (`.html`)**: インタラクティブな地図（Leaflet）を組み込んだHTMLファイル（表示時に外部リソースを取得）。
 - **走行データの可視化 & トリミング**:
-  - ブラウザ上で走行軌跡（マップ）と速度・高度変化グラフを表示。
+  - ブラウザ上で走行軌跡（マップ）と速度グラフを表示し、ホバーした点の標高も表示。
   - トラックの開始時間・終了時間を視覚的に指定して必要なスティント・ラップ区間のみを抽出（トリミング）。
   - タイムゾーンオフセット（時差補正）の調整機能。
 - **完全ローカル処理（安心のプライバシー保護）**:
-  - データのデコードや変換処理はすべてユーザーのWebブラウザ内で完結。外部サーバーへのデータ送信は一切行われません。
+  - データのデコードや変換処理はすべてユーザーのWebブラウザ内で完結。ログを外部サーバーへ送信しません。ただし、出力した HTML 地図を開くと Leaflet を CDN から、地図タイルを外部サービスから取得します。タイル取得時には閲覧地域に応じたリクエストが送信されます。
 
 ### 活用例: RaceChronoでの走行ライン解析
 1. デジスパイスアプリのフォルダ内から記録データ（`.bon4` ファイル）を取り出します。
@@ -93,17 +93,17 @@ It also features interactive track previews (maps and speed graphs), time-range 
 - **DigSpice 4 Data Support**:
   - Automatically parses `.bon4` files from the DigSpice app folder, binary log files (`.bnx4`, `.bon4`, `.binx`, `.bon`), and NMEA text logs.
 - **Seamless Integration with RaceChrono & Telemetry Tools**:
-  - **NMEA-0183 (`.nmea`)**: GGA followed by RMC for each point, including altitude (one decimal place) and satellite count (two digits, zero-padded), with selectable Talker IDs (`$GP` / `$GN`), fully compatible with RaceChrono for driving line analysis on smartphones.
+  - **NMEA-0183 (`.nmea`)**: GGA followed by RMC for each point, preserving all input GGA fields except time and Talker ID. Generated GGA sentences leave missing altitude, satellite count, HDOP, geoid height, and other unrecorded fields blank (fix quality defaults to 1), and retain measured binary altitude and satellite counts, with selectable Talker IDs (`$GP` / `$GN`), fully compatible with RaceChrono for driving line analysis on smartphones.
   - **GPX (`.gpx`)**: Standard GPS Exchange Format for telemetry and mapping software.
   - **CSV (`.csv`)**: Structured tabular data ready for Excel and data analysis workflows.
   - **TXT (`.txt`)**: Space-separated timestamped coordinate and telemetry text output.
-  - **HTML Map (`.html`)**: Self-contained interactive Leaflet map file for track visualization.
+  - **HTML Map (`.html`)**: Interactive Leaflet HTML map file for track visualization (loads external resources when opened).
 - **Data Visualization & Range Trimming**:
-  - Interactive track map rendering alongside speed and altitude telemetry charts.
+  - Interactive track map and speed graph, with altitude shown for the hovered point.
   - Visually trim start and end times to isolate specific laps or stints.
   - Custom UTC timezone offset adjustment.
 - **100% Client-Side Processing (Privacy First)**:
-  - All file decoding and conversion processes happen strictly within your browser. No data is ever uploaded to external servers.
+  - All file decoding and conversion processes happen strictly within your browser. Logs are not uploaded to external servers. Opening an exported HTML map fetches Leaflet from a CDN and map tiles from external services; tile requests reflect the region being viewed.
 
 ### Use Case: Smartphone Driving Line Analysis with RaceChrono
 1. Extract `.bon4` log files recorded inside the DigSpice application folder.
