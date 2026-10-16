@@ -1,5 +1,19 @@
 # DigSpice 4 Converter (ds4_convert)
 
+> [!IMPORTANT]
+> **【重要】統合版「DS Universal Suite」への機能移行・開発終了のお知らせ**
+>
+> 本ツール（`ds4_convert`）のログ変換機能は、ラップ比較・テレメトリ解析・ロガー設定機能を備えた統合版 **[DS Universal Suite](https://github.com/oud0n/ds_universal)** に統合されました。これに伴い、**本リポジトリ単体での開発・更新は終了予定**です。
+>
+> 今後は下記の GitHub Pages（ブラウザ版）をご利用ください：
+> - **移行先 Web アプリ（ログ変換）**: **<https://oud0n.github.io/ds_universal/#convert>**
+> - **DS Universal Suite トップ**: **<https://oud0n.github.io/ds_universal/>**
+> - **統合先リポジトリ**: **<https://github.com/oud0n/ds_universal>**
+>
+> ---
+> **Notice: Migrated to DS Universal Suite**
+> The features of `ds4_convert` have been integrated into **[DS Universal Suite](https://github.com/oud0n/ds_universal)**, and standalone development of this repository is being discontinued. Please use the new browser version at **<https://oud0n.github.io/ds_universal/#convert>**.
+
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/oud0n)
 
 [日本語](#日本語) | [English](#english)
@@ -10,7 +24,7 @@
 ## 日本語
 
 ### 概要
-> 解析機能を備えた統合版 **DS Universal Suite** のブラウザ版でも、同じ変換が行えます: <https://oud0n.github.io/ds_universal/#convert>
+> **お知らせ**: 本ツールの機能は統合版 **DS Universal Suite** に移行しました（単体での更新は終了予定）。今後は <https://oud0n.github.io/ds_universal/#convert> をご利用ください。
 
 **DigSpice 4 Converter (ds4_convert)** は、デジスパイス4 (DigSpice 4) などのモータースポーツ向けGPSデータロガーのログファイル（`.bnx4`, `.bon4`, `.binx`, `.bon`, `.txt`, `.nmea`）を、標準的な **NMEA-0183 形式** をはじめとする各種データフォーマットに変換・解析・可視化できるWebアプリケーションです。
 
@@ -81,7 +95,7 @@ npm run build
 ## English
 
 ### Overview
-> The same conversion is also available in the browser version of **DS Universal Suite**, which adds telemetry analysis: <https://oud0n.github.io/ds_universal/#convert>
+> **Notice**: This tool has been integrated into **DS Universal Suite** and standalone development is being discontinued. Please use the browser version at <https://oud0n.github.io/ds_universal/#convert>.
 
 **DigSpice 4 Converter (ds4_convert)** is a modern Web application designed to convert, parse, and visualize GPS log files from **DigSpice 4** motorsport data loggers (`.bnx4`, `.bon4`, `.binx`, `.bon`, `.txt`, `.nmea`) into standard **NMEA-0183 format** and other compatible formats.
 

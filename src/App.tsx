@@ -234,6 +234,28 @@ export default function App() {
           </div>
         </div>
 
+        {/* Migration Notice Banner */}
+        <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-100 leading-relaxed">
+            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">【重要】統合版「DS Universal Suite」への機能移行のお知らせ</p>
+              <p className="text-amber-800 dark:text-amber-200/90 mt-0.5">
+                本ツール（ds4_convert）の機能は、走行データ解析やロガー設定も可能な統合版 <strong>DS Universal Suite</strong> に統合されたため、単体での開発・更新は終了予定です。今後は新しいWebアプリ版をご利用ください。
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://oud0n.github.io/ds_universal/#convert"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 shadow-xs transition-colors"
+          >
+            <span>DS Universal Suite を開く</span>
+            <span>→</span>
+          </a>
+        </div>
+
         {/* Header */}
         <div className="text-center flex flex-col items-center gap-2">
           <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 p-3 rounded-xl text-blue-600 dark:text-blue-400">
